@@ -642,4 +642,85 @@ const showHomeOnStart = true; // ★今回の要望：最初からホームを�
 if(showHomeOnStart) openHome();
 </script>
 </body>
+  /* ===== 修正パッチ: ツールバー表示/折畳みとアクティブ表示、上部メニュー揃え ===== */
+
+/* 左=ツールバー(固定幅) / 右=キャンバス */
+.wrap{
+  display:grid;
+  grid-template-columns: 60px 1fr;   /* 固定幅60px */
+  grid-template-rows: 1fr;
+  height: calc(100% - 48px);
+}
+/* 折りたたみ時も “最小28px” 残す（見失い防止） */
+.wrap.collapsedX{ grid-template-columns: 28px 1fr; }
+
+/* サイドバー：背景は常に透明（ノートを隠さない） */
+.sidebar{
+  position: relative;
+  background: transparent;
+  border-right: 1px solid var(--muted);
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: visible;
+}
+/* 見た目だけ圧縮（背景は透明のまま） */
+.sidebar.collapsedY{ max-width: 28px; padding-left: 4px; }
+
+/* △/▽トグル：ツールアイコンと同サイズ・同位置に固定 */
+.toggleBar{
+  position: absolute;
+  top: 8px; left: 8px;
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  display: grid; place-items: center;
+  border: 1px solid var(--muted);
+  background: #0b1220;
+  z-index: 5;
+  cursor: pointer;
+}
+
+/* ツールアイコン箱：左右余白を均等（中央寄せ） */
+.tool{
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  display: grid; place-items: center;
+  border: 1px solid var(--muted);
+  background: #0b1220;
+  margin: 0 auto;
+}
+
+/* アクティブの視覚（太め緑グローに復帰） */
+.tool.active{
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 2px rgba(80,200,120,.6),
+    0 0 12px rgba(80,200,120,.55);
+}
+
+/* 設定ギア：通常は細線、アクティブ時は細いグロー */
+.gear{
+  width: 24px; height: 24px;
+  border-radius: 8px;
+  display: grid; place-items: center;
+  border: 1px solid var(--muted);
+  opacity: .85;
+}
+.gear.active{
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(80,200,120,.5);
+}
+
+/* 上部メニュー：ボタン内テキストの縦ズレ解消 */
+header .actions button{
+  display: inline-flex;
+  align-items: center;     /* 垂直中央 */
+  justify-content: center; /* 水平中央 */
+  line-height: 1;
+  height: 32px;
+  padding: 0 10px;
+}
+
 </html>
+
