@@ -3,24 +3,21 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Note Link v0.6.5 / No.9</title>
+<title>Note Link v0.6.6 / No.10</title>
 <style>
 :root{
-  --bg:#0f172a;        /* 背景（キャンバス外） */
-  --panel:#111827;     /* パネル/サイドバー */
-  --ink:#e5e7eb;       /* 文字色 */
-  --accent:#50C878;    /* 強調（緑） */
-  --muted:#374151;     /* 枠線 */
+  --bg:#0f172a; --panel:#111827; --ink:#e5e7eb;
+  --accent:#50C878; --muted:#374151;
 }
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
 body{
   margin:0; color:var(--ink); background:var(--bg);
-  font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
   overflow:hidden;
 }
 
-/* ── ヘッダー（上部メニュー） ─────────────────────────── */
+/* ─ 上部メニュー ─ */
 header{
   height:48px; display:flex; align-items:center; justify-content:space-between;
   padding:0 12px; background:var(--panel); border-bottom:1px solid var(--muted);
@@ -30,53 +27,57 @@ header{
 .brand .ver{ font-size:12px; padding:2px 8px; border:1px solid var(--muted); border-radius:10px; opacity:.9; }
 .actions{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .actions button{
-  height:32px; padding:0 10px; border-radius:10px; border:1px solid var(--muted);
-  background:#0b1220; color:var(--ink); display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+  height:32px; min-width:42px; padding:0 10px; border-radius:10px; border:1px solid var(--muted);
+  background:#0b1220; color:var(--ink); display:inline-flex; align-items:center; justify-content:center;
+  line-height:1; font-size:14px; cursor:pointer; user-select:none;
 }
 .actions button:hover{ border-color:var(--accent); }
-
-/* ページ表示（必要なら使う） */
 .pager{ height:32px; display:inline-flex; align-items:center; gap:6px; border:1px solid var(--muted); border-radius:10px; padding:0 8px; background:#0b1220; }
 .pager .count{ min-width:64px; text-align:center; font-variant-numeric:tabular-nums; }
 
-/* ── レイアウト（サイドバー＋キャンバス） ───────────────── */
-.wrap{
-  display:grid; grid-template-columns:64px 1fr; height:calc(100% - 48px);
-}
+/* ─ レイアウト ─ */
+.wrap{ display:grid; grid-template-columns:64px 1fr; height:calc(100% - 48px); }
 .wrap.collapsedX{ grid-template-columns:44px 1fr; }
-
 .sidebar{
-  position:relative; z-index:2;
-  background:var(--panel); border-right:1px solid var(--muted);
+  position:relative; z-index:2; background:var(--panel); border-right:1px solid var(--muted);
   padding:8px 10px; display:flex; flex-direction:column; gap:10px; overflow:auto;
 }
 .sidebar.collapsedY{ max-height:44px; overflow:hidden; }
-
-.stage{ position:relative; z-index:1; grid-column:2/-1; background:#0b1220; }
+.stage{ position:relative; z-index:1; background:#0b1220; }
 canvas{ display:block; width:100%; height:100%; }
 
-/* ── ツール群 ───────────────────────────────────────── */
+/* ─ ツール群 ─ */
 .toolGroup{ display:flex; flex-direction:column; align-items:center; gap:4px; }
 .tool{
   width:36px; height:36px; margin:0 auto; border-radius:12px;
   display:grid; place-items:center; border:1px solid var(--muted); background:#0b1220; cursor:pointer;
+  transition:box-shadow .12s, border-color .12s;
 }
 .tool-label{ font-size:10px; opacity:.85; text-align:center; }
 .tool.active{
   border-color:var(--accent);
   box-shadow:0 0 0 2px var(--accent) inset, 0 0 10px rgba(80,200,120,.35);
 }
-.gear{ width:24px; height:24px; border-radius:8px; border:1px solid var(--muted); display:none; place-items:center; font-size:12px; opacity:.95; }
-.toolGroup.active .gear{ display:grid; border-color:#94f1c2; }
+/* 設定ボタン（ギア）もアクティブ表現を追加：細い線＋薄グロー */
+.gear{
+  width:24px; height:24px; border-radius:8px; border:1px solid var(--muted);
+  display:none; place-items:center; font-size:12px; opacity:.95; cursor:pointer;
+  transition:box-shadow .12s, border-color .12s;
+}
+.toolGroup.active .gear{ display:grid; }
+.gear.active{
+  border-color:var(--accent);
+  box-shadow:0 0 0 1.5px var(--accent) inset, 0 0 8px rgba(80,200,120,.25);
+}
 
-/* 折りたたみトグル：ペンの真上・同サイズ */
+/* 折りたたみトグル（ペンの真上・同サイズ） */
 .toggleBar{
   position:absolute; left:50%; transform:translateX(-50%);
   top:8px; width:36px; height:36px; border-radius:12px; display:grid; place-items:center;
-  background:#0b1220; border:1px solid var(--muted); cursor:pointer; font-size:16px;
+  background:#0b1220; border:1px solid var(--muted); cursor:pointer; font-size:16px; user-select:none;
 }
 
-/* ── 設定フライアウト（常に1つだけ表示） ─────────────── */
+/* ─ 設定フライアウト（常に1枚だけ） ─ */
 .flyout{
   position:absolute; top:72px; left:88px; width:360px; max-width:90vw; max-height:70vh; overflow:auto;
   background:rgba(17,24,39,.98); border:1px solid var(--muted); border-radius:14px; padding:10px;
@@ -90,26 +91,33 @@ canvas{ display:block; width:100%; height:100%; }
 .tabbar button.active{ background:#10212f; border-color:var(--accent); }
 .panel h3{ margin:6px 0 8px; font-size:14px; }
 .row{ display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
-.row input[type="range"]{ width: 160px; }
+.row input[type="range"]{ width:160px; }
 .hint{ font-size:12px; opacity:.75; }
-
-/* 色スウォッチ */
 .swatch{ width:22px; height:22px; border-radius:6px; border:1px solid #64748b; cursor:pointer; }
 .swatchRow{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-
-/* 入力テキスト */
 .textInput{
   position:absolute; background:#fff; color:#111827; border:1px solid #94a3b8; border-radius:6px; padding:4px 6px; min-width:120px; outline:none;
+}
+
+/* ─ Home（入口） ─ */
+#homeModal{ position:fixed; inset:0; display:none; background:rgba(0,0,0,.5); z-index:1000; }
+#homePanel{
+  width:min(680px,92vw); margin:8vh auto; background:#111827; border:1px solid #374151; border-radius:16px; padding:16px;
+}
+#homePanel h2{ margin:0 0 8px; }
+#homeGrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+#homeGrid button{
+  height:40px; border-radius:10px; border:1px solid var(--muted);
+  background:#0b1220; color:var(--ink); display:inline-flex; align-items:center; justify-content:center; line-height:1; cursor:pointer;
 }
 </style>
 </head>
 <body>
   <header>
     <div class="brand">
-      <span class="dot"></span> Note Link <span class="ver">v0.6.5 / No.9</span>
+      <span class="dot"></span> Note Link <span class="ver">v0.6.6 / No.10</span>
     </div>
     <div class="actions">
-      <!-- 必要なら Undo/Redo 等もここに追加可能 -->
       <div class="pager">
         <button id="btnPrev" title="前へ">◀</button>
         <span id="pageCount" class="count">1 / 1</span>
@@ -129,7 +137,7 @@ canvas{ display:block; width:100%; height:100%; }
 
   <div class="wrap" id="wrap">
     <aside class="sidebar" id="sidebar">
-      <div class="toggleBar" id="toggleBar" title="ツールバーを縦に折りたたむ/戻す">△</div>
+      <div class="toggleBar" id="toggleBar" title="ツールバーの開閉">△</div>
 
       <div class="toolGroup" id="groupPen">
         <button class="tool active" id="toolPen" title="ペン">✎</button>
@@ -171,13 +179,11 @@ canvas{ display:block; width:100%; height:100%; }
     <main class="stage" id="stage">
       <canvas id="canvas"></canvas>
 
-      <!-- 設定フライアウト -->
+      <!-- 設定フライアウト（1枚） -->
       <div class="flyout hidden" id="flyout">
         <div class="flyoutHeader">
           <div class="title" id="flyoutTitle">設定</div>
-          <div style="display:flex;gap:6px;align-items:center;">
-            <button class="closeX" id="flyoutClose">✕</button>
-          </div>
+          <button class="closeX" id="flyoutClose">✕</button>
         </div>
         <div class="tabbar" id="tabbar"></div>
         <div id="flyoutBody"></div>
@@ -188,12 +194,12 @@ canvas{ display:block; width:100%; height:100%; }
     </main>
   </div>
 
-  <!-- Home（概念導入の入口。必要時に showHomeOnStart=true で表示） -->
-  <div id="homeModal" style="position:fixed;inset:0;display:none;background:rgba(0,0,0,.5);z-index:1000;">
-    <div style="width:min(680px,92vw);margin:8vh auto;background:#111827;border:1px solid #374151;border-radius:16px;padding:16px;">
-      <h2 style="margin:0 0 8px;">ノートを選ぶ</h2>
+  <!-- Home（入口） -->
+  <div id="homeModal">
+    <div id="homePanel">
+      <h2>ノートを選ぶ</h2>
       <p style="opacity:.8;margin-top:0;">①新規／②過去ノート／③先生の課題／④問題集／⑤ゴミ箱</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div id="homeGrid">
         <button id="homeNew">① 新規ノート</button>
         <button id="homeOpen">② 過去ノート</button>
         <button id="homeAssign">③ 先生の課題</button>
@@ -205,31 +211,27 @@ canvas{ display:block; width:100%; height:100%; }
   </div>
 
 <script>
-/* =======================
-   状態
-======================= */
+/* ====== バージョン表示 ====== */
+const VERSION = 'v0.6.6', RUNNO = 'No.10';
+
+/* ====== 状態 ====== */
 const state = {
-  pages: [], pageIndex: 0,
-  currentTool: 'pen',
-  view: { scale:1, x:0, y:0, min:0.2, max:6 },
-  stroke: null, drawing:false, pointerId:null,
+  pages:[newPage()], pageIndex:0,
+  currentTool:'pen',
+  view:{ scale:1, x:0, y:0, min:0.2, max:6 },
+  drawing:false, pointerId:null, stroke:null,
   guide:{ type:'none', spacing:28, marginLeft:40, opacity:0.25, includeExport:true, gridEvery:0, engMid:0.5 },
   pen:{ pressureEnable:true, pressureGain:1.2, tiltEnable:false, tiltGain:0.6, palmReject:true, penOnly:false },
   hl:{ color:'#ffff66', size:16 },
   eraser:{ radius:22 },
   text:{ color:'#ffffff', size:18, font:"'Noto Sans JP',sans-serif" },
   bgColor:'#0b1220',
-  teacher:false, // true=編集不可
+  teacher:false,
   ui:{ flyoutOpen:false, flyoutTab:'' }
 };
-
-/* 初期ページ */
 function newPage(){ return { strokes:[], texts:[], bg:null, bgBitmap:null, bgSize:{w:0,h:0} }; }
-state.pages.push(newPage());
 
-/* =======================
-   要素参照
-======================= */
+/* ====== 要素 ====== */
 const wrap = document.getElementById('wrap');
 const sidebar = document.getElementById('sidebar');
 const toggleBar = document.getElementById('toggleBar');
@@ -282,9 +284,7 @@ const fileLoad = document.getElementById('fileLoad');
 const btnShare = document.getElementById('btnShare');
 const btnTeacher = document.getElementById('btnTeacher');
 
-/* =======================
-   レイアウト＆描画
-======================= */
+/* ====== レイアウト・描画 ====== */
 function resizeCanvas(){
   const r = stage.getBoundingClientRect();
   canvas.width = Math.floor(r.width * dpr);
@@ -304,15 +304,13 @@ function drawGuide(gctx){
   gctx.save(); gctx.globalAlpha = g.opacity;
 
   if(g.type==='ruled' || g.type==='eng'){
-    // 横罫
-    gctx.strokeStyle = '#64748b'; gctx.lineWidth=1;
+    gctx.strokeStyle='#64748b'; gctx.lineWidth=1;
     for(let y=g.spacing; y<h; y+=g.spacing){
       gctx.beginPath(); gctx.moveTo(0,y+0.5); gctx.lineTo(w,y+0.5); gctx.stroke();
-      if(g.type==='eng'){ // 中間線
+      if(g.type==='eng'){
         gctx.save(); gctx.strokeStyle='#7c8ba0'; gctx.globalAlpha=Math.max(0.15,g.opacity*0.7);
         const mid = y - g.spacing*(1 - g.engMid);
-        gctx.beginPath(); gctx.moveTo(0,mid+0.5); gctx.lineTo(w,mid+0.5); gctx.stroke();
-        gctx.restore();
+        gctx.beginPath(); gctx.moveTo(0,mid+0.5); gctx.lineTo(w,mid+0.5); gctx.stroke(); gctx.restore();
       }
     }
     if(g.marginLeft>0){
@@ -322,93 +320,68 @@ function drawGuide(gctx){
   }else if(g.type==='grid'){
     const k = Math.max(0, g.gridEvery|0);
     for(let y=g.spacing; y<h; y+=g.spacing){
-      gctx.beginPath();
-      const thick = (k && (Math.round(y/g.spacing)%k===0));
-      gctx.strokeStyle = thick? '#7f8ea3' : '#475569';
-      gctx.lineWidth = thick? 1.5 : 1;
+      gctx.beginPath(); const thick=(k && (Math.round(y/g.spacing)%k===0));
+      gctx.strokeStyle = thick? '#7f8ea3' : '#475569'; gctx.lineWidth= thick? 1.5:1;
       gctx.moveTo(0,y+0.5); gctx.lineTo(w,y+0.5); gctx.stroke();
     }
     for(let x=g.spacing; x<w; x+=g.spacing){
-      gctx.beginPath();
-      const thick = (k && (Math.round(x/g.spacing)%k===0));
-      gctx.strokeStyle = thick? '#7f8ea3' : '#475569';
-      gctx.lineWidth = thick? 1.5 : 1;
+      gctx.beginPath(); const thick=(k && (Math.round(x/g.spacing)%k===0));
+      gctx.strokeStyle = thick? '#7f8ea3' : '#475569'; gctx.lineWidth= thick? 1.5:1;
       gctx.moveTo(x+0.5,0); gctx.lineTo(x+0.5,h); gctx.stroke();
     }
   }else if(g.type==='dot'){
-    gctx.fillStyle = '#64748b';
-    for(let y=g.spacing; y<h; y+=g.spacing){
-      for(let x=g.spacing; x<w; x+=g.spacing){
-        gctx.beginPath(); gctx.arc(x,y,1,0,Math.PI*2); gctx.fill();
-      }
-    }
+    gctx.fillStyle='#64748b';
+    for(let y=g.spacing; y<h; y+=g.spacing)
+      for(let x=g.spacing; x<w; x+=g.spacing){ gctx.beginPath(); gctx.arc(x,y,1,0,Math.PI*2); gctx.fill(); }
   }
   gctx.restore();
 }
-
-function drawStroke(gctx, s){
+function drawStroke(gctx,s){
   if(!s.points || s.points.length<2) return;
-  gctx.save();
-  gctx.lineJoin='round'; gctx.lineCap='round';
-  gctx.globalAlpha = s.alpha; gctx.strokeStyle = s.color; gctx.lineWidth = s.size;
+  gctx.save(); gctx.lineJoin='round'; gctx.lineCap='round';
+  gctx.globalAlpha=s.alpha; gctx.strokeStyle=s.color; gctx.lineWidth=s.size;
   gctx.beginPath(); gctx.moveTo(s.points[0].x, s.points[0].y);
-  for(let i=1;i<s.points.length;i++){ const p = s.points[i]; gctx.lineTo(p.x, p.y); }
+  for(let i=1;i<s.points.length;i++){ const p=s.points[i]; gctx.lineTo(p.x,p.y); }
   gctx.stroke(); gctx.restore();
 }
-
 function drawTexts(gctx){
   const page = state.pages[state.pageIndex];
   for(const t of page.texts){
-    gctx.save();
-    gctx.font = `${t.size}px ${t.font}`; gctx.fillStyle = t.color; gctx.textBaseline='top';
-    gctx.fillText(t.text, t.x, t.y);
-    gctx.restore();
+    gctx.save(); gctx.font=`${t.size}px ${t.font}`; gctx.fillStyle=t.color; gctx.textBaseline='top';
+    gctx.fillText(t.text, t.x, t.y); gctx.restore();
   }
 }
-
 function render(){
-  const r = canvas.getBoundingClientRect();
-  const w = Math.floor(r.width), h = Math.floor(r.height);
+  const r = canvas.getBoundingClientRect(), w=Math.floor(r.width), h=Math.floor(r.height);
   ctx.clearRect(0,0,w,h);
-  // 背景色
   ctx.fillStyle = state.bgColor; ctx.fillRect(0,0,w,h);
-
-  // 背景画像（拡張余地）
   const page = state.pages[state.pageIndex];
-  if(page.bgBitmap){ ctx.drawImage(page.bgBitmap,0,0); }
-
-  // ガイド
+  if(page.bgBitmap) ctx.drawImage(page.bgBitmap,0,0);
   drawGuide(ctx);
-
-  // ストローク
-  for(const s of page.strokes) drawStroke(ctx, s);
-  if(state.stroke) drawStroke(ctx, state.stroke);
-
-  // テキスト
+  for(const s of page.strokes) drawStroke(ctx,s);
+  if(state.stroke) drawStroke(ctx,state.stroke);
   drawTexts(ctx);
 }
 resizeCanvas(); updatePageIndicator();
 
-/* =======================
-   ツール切替＆フライアウト
-======================= */
-function closeFlyout(){ flyout.classList.add('hidden'); state.ui.flyoutOpen=false; }
+/* ====== フライアウト ====== */
+function closeFlyout(){ flyout.classList.add('hidden'); state.ui.flyoutOpen=false;
+  [gearPen,gearHL,gearEraser,gearPan,gearText,gearBg].forEach(g=>g.classList.remove('active')); }
 function openFlyout(tab){
-  state.ui.flyoutOpen=true; state.ui.flyoutTab=tab;
-  flyout.classList.remove('hidden');
+  state.ui.flyoutOpen=true; state.ui.flyoutTab=tab; flyout.classList.remove('hidden');
+  const titles={pen:'ペン設定',hl:'蛍光ペン設定',eraser:'消しゴム設定',pan:'移動/ズーム',text:'テキスト設定',bg:'背景色'};
+  flyoutTitle.textContent=titles[tab]||'設定';
+  // ギアのアクティブ表現
+  closeFlyout(); flyout.classList.remove('hidden'); ({pen:gearPen,hl:gearHL,eraser:gearEraser,pan:gearPan,text:gearText,bg:gearBg}[tab]).classList.add('active');
 
-  const titles = { pen:'ペン設定', hl:'蛍光ペン設定', eraser:'消しゴム設定', pan:'移動/ズーム', text:'テキスト設定', bg:'背景色' };
-  flyoutTitle.textContent = titles[tab] || '設定';
-
-  tabbar.innerHTML='';
-  ['pen','hl','eraser','pan','text','bg'].forEach(t=>{
-    const b=document.createElement('button');
-    b.textContent=titles[t]; if(t===tab) b.classList.add('active');
+  tabbar.innerHTML=''; ['pen','hl','eraser','pan','text','bg'].forEach(t=>{
+    const b=document.createElement('button'); b.textContent=titles[t]; if(t===tab) b.classList.add('active');
     b.onclick=()=> openFlyout(t); tabbar.appendChild(b);
   });
 
+  const $ = sel => flyoutBody.querySelector(sel);
   flyoutBody.innerHTML='';
-  // 簡易UI
+
   if(tab==='pen'){
     flyoutBody.innerHTML=`
       <div class="panel"><h3>ペン設定</h3>
@@ -424,16 +397,15 @@ function openFlyout(tab){
           <div class="row"><label><input type="checkbox" id="penOnly" ${state.pen.penOnly?'checked':''}> ペン専用モード</label></div>
         </details>
       </div>`;
-    const $ = id=>flyoutBody.querySelector(id);
-    $('#penColor').oninput = e=> state.penColor = e.target.value;
-    $('#penSize').oninput  = e=>{ state.baseSize = +e.target.value; $('#penSizeVal').textContent=e.target.value; };
-    $('#penAlpha').oninput = e=>{ state.baseAlpha= +e.target.value; $('#penAlphaVal').textContent=e.target.value; };
-    $('#pressEn').onchange = e=> state.pen.pressureEnable = e.target.checked;
-    $('#pressGain').oninput= e=>{ state.pen.pressureGain=+e.target.value; $('#pressGainVal').textContent=e.target.value; };
-    $('#tiltEn').onchange  = e=> state.pen.tiltEnable = e.target.checked;
-    $('#tiltGain').oninput = e=>{ state.pen.tiltGain=+e.target.value; $('#tiltGainVal').textContent=e.target.value; };
-    $('#palm').onchange    = e=> state.pen.palmReject = e.target.checked;
-    $('#penOnly').onchange = e=> state.pen.penOnly   = e.target.checked;
+    $('#penColor').oninput=e=> state.penColor=e.target.value;
+    $('#penSize').oninput =e=>{ state.baseSize=+e.target.value; $('#penSizeVal').textContent=e.target.value; };
+    $('#penAlpha').oninput=e=>{ state.baseAlpha=+e.target.value; $('#penAlphaVal').textContent=e.target.value; };
+    $('#pressEn').onchange =e=> state.pen.pressureEnable=e.target.checked;
+    $('#pressGain').oninput=e=>{ state.pen.pressureGain=+e.target.value; $('#pressGainVal').textContent=e.target.value; };
+    $('#tiltEn').onchange  =e=> state.pen.tiltEnable=e.target.checked;
+    $('#tiltGain').oninput =e=>{ state.pen.tiltGain=+e.target.value; $('#tiltGainVal').textContent=e.target.value; };
+    $('#palm').onchange    =e=> state.pen.palmReject=e.target.checked;
+    $('#penOnly').onchange =e=> state.pen.penOnly=e.target.checked;
   }
   if(tab==='hl'){
     flyoutBody.innerHTML=`
@@ -441,19 +413,20 @@ function openFlyout(tab){
         <div class="row"><label>色</label><input type="color" id="hlColor" value="${state.hl.color}"></div>
         <div class="row"><label>太さ</label><input type="range" id="hlSize" min="4" max="60" value="${state.hl.size}"><span id="hlSizeVal">${state.hl.size}</span></div>
       </div>`;
-    const $=id=>flyoutBody.querySelector(id);
-    $('#hlColor').oninput = e=> state.hl.color=e.target.value;
-    $('#hlSize').oninput  = e=>{ state.hl.size=+e.target.value; $('#hlSizeVal').textContent=e.target.value; };
+    const $=sel=>flyoutBody.querySelector(sel);
+    $('#hlColor').oninput=e=> state.hl.color=e.target.value;
+    $('#hlSize').oninput =e=>{ state.hl.size=+e.target.value; $('#hlSizeVal').textContent=e.target.value; };
   }
   if(tab==='eraser'){
     flyoutBody.innerHTML=`
       <div class="panel"><h3>消しゴム設定</h3>
         <div class="row"><label>消し範囲</label><input type="range" id="erRad" min="8" max="60" value="${state.eraser.radius}"><span id="erVal">${state.eraser.radius}</span></div>
         <div class="row"><button id="eraseAll">全面消去</button></div>
+        <div class="hint">※ 円の当たり判定に触れたストロークを削除します（部分消去）。</div>
       </div>`;
-    const $=id=>flyoutBody.querySelector(id);
-    $('#erRad').oninput = e=>{ state.eraser.radius=+e.target.value; $('#erVal').textContent=e.target.value; };
-    $('#eraseAll').onclick = ()=>{ state.pages[state.pageIndex].strokes=[]; render(); };
+    const $=sel=>flyoutBody.querySelector(sel);
+    $('#erRad').oninput =e=>{ state.eraser.radius=+e.target.value; $('#erVal').textContent=e.target.value; };
+    $('#eraseAll').onclick =()=>{ state.pages[state.pageIndex].strokes=[]; render(); };
   }
   if(tab==='text'){
     flyoutBody.innerHTML=`
@@ -468,11 +441,11 @@ function openFlyout(tab){
           </select>
         </div>
       </div>`;
-    const $=id=>flyoutBody.querySelector(id);
-    $('#txColor').oninput = e=> state.text.color=e.target.value;
-    $('#txSize').oninput  = e=>{ state.text.size=+e.target.value; $('#txVal').textContent=e.target.value; };
-    $('#txFont').value = state.text.font;
-    $('#txFont').onchange= e=> state.text.font=e.target.value;
+    const $=sel=>flyoutBody.querySelector(sel);
+    $('#txColor').oninput=e=> state.text.color=e.target.value;
+    $('#txSize').oninput =e=>{ state.text.size=+e.target.value; $('#txVal').textContent=e.target.value; };
+    $('#txFont').value=state.text.font;
+    $('#txFont').onchange=e=> state.text.font=e.target.value;
   }
   if(tab==='bg'){
     flyoutBody.innerHTML=`
@@ -488,25 +461,24 @@ function openFlyout(tab){
         <div class="row"><label>カスタム</label><input type="color" id="bgPick" value="${state.bgColor}"></div>
         <div class="row"><label><input type="checkbox" id="gInclude" ${state.guide.includeExport?'checked':''}> PNGにガイドを含める</label></div>
       </div>`;
-    const $=id=>flyoutBody.querySelector(id);
-    $('#bgPick').oninput = e=>{ state.bgColor=e.target.value; render(); };
+    const $=sel=>flyoutBody.querySelector(sel);
+    $('#bgPick').oninput=e=>{ state.bgColor=e.target.value; render(); };
     flyoutBody.querySelectorAll('.swatch').forEach(el=>{
-      el.addEventListener('click', ()=>{ const c=el.getAttribute('data-c'); state.bgColor=c; $('#bgPick').value=c; render(); });
+      el.addEventListener('click',()=>{ const c=el.getAttribute('data-c'); state.bgColor=c; $('#bgPick').value=c; render(); });
     });
-    $('#gInclude').onchange = e=> state.guide.includeExport = e.target.checked;
+    $('#gInclude').onchange=e=> state.guide.includeExport=e.target.checked;
   }
 }
 flyoutClose.onclick = closeFlyout;
 
+/* ツール切替（設定は閉じる） */
 function setTool(t){
   state.currentTool=t;
   [toolPen,toolHL,toolEraser,toolPan,toolText,toolBg].forEach(el=>el.classList.remove('active'));
   ({pen:toolPen,hl:toolHL,eraser:toolEraser,pan:toolPan,text:toolText,bg:toolBg}[t]).classList.add('active');
-
   [groupPen,groupHL,groupEraser,groupPan,groupText,groupBg].forEach(g=>g.classList.remove('active'));
   ({pen:groupPen,hl:groupHL,eraser:groupEraser,pan:groupPan,text:groupText,bg:groupBg}[t]).classList.add('active');
-
-  if(state.ui.flyoutOpen) closeFlyout(); // ←ツール変更時は設定を閉じる
+  closeFlyout();
 }
 toolPen.onclick = ()=> setTool('pen');
 toolHL.onclick  = ()=> setTool('hl');
@@ -530,93 +502,67 @@ toggleBar.addEventListener('click', ()=>{
   resizeCanvas();
 });
 
-/* =======================
-   入力（描画/消去/テキスト）
-======================= */
+/* ====== 入力 ====== */
 function toCanvas(x,y){
   const r = canvas.getBoundingClientRect();
   return { x:(x - r.left - state.view.x)/state.view.scale, y:(y - r.top - state.view.y)/state.view.scale };
 }
 function effectiveSize(base,e){
-  let sz = base;
+  let sz=base;
   if(state.currentTool==='pen'){
-    if(state.pen.pressureEnable && typeof e.pressure==='number'){
-      const gain = Math.max(0,state.pen.pressureGain);
-      sz *= (0.4 + e.pressure * gain);
-    }
+    if(state.pen.pressureEnable && typeof e.pressure==='number'){ const g=Math.max(0,state.pen.pressureGain); sz *= (0.4 + e.pressure*g); }
     if(state.pen.tiltEnable && (typeof e.altitudeAngle==='number' || typeof e.tiltX==='number')){
-      let factor=1;
-      if(typeof e.altitudeAngle==='number'){
-        const a = Math.max(0.0001, e.altitudeAngle);
-        factor = 1 + (1 - a) * state.pen.tiltGain;
-      }else{
-        const t = Math.min(90, Math.sqrt((e.tiltX||0)**2 + (e.tiltY||0)**2));
-        factor = 1 + (t/90) * state.pen.tiltGain;
-      }
-      sz *= factor;
+      let f=1; if(typeof e.altitudeAngle==='number'){ const a=Math.max(0.0001,e.altitudeAngle); f=1+(1-a)*state.pen.tiltGain; }
+      else { const t=Math.min(90,Math.sqrt((e.tiltX||0)**2+(e.tiltY||0)**2)); f=1+(t/90)*state.pen.tiltGain; }
+      sz*=f;
     }
   }
   return Math.max(0.5, Math.min(60, sz));
 }
 
-/* 消しゴム（円範囲に触れたストロークをまるごと削除） */
+/* 部分消去：円に触れたストロークを削除 */
 function eraseAt(x,y,r){
   const page = state.pages[state.pageIndex];
   page.strokes = page.strokes.filter(st=>{
-    for(const p of st.points){
-      const dx=p.x-x, dy=p.y-y;
-      if(dx*dx+dy*dy <= r*r) return false; // 消す
-    }
+    for(const p of st.points){ const dx=p.x-x, dy=p.y-y; if(dx*dx+dy*dy <= r*r) return false; }
     return true;
   });
 }
 
 canvas.addEventListener('pointerdown', (e)=>{
-  if(state.teacher) return; // 教師モード中は編集不可
+  if(state.teacher) return;
   if(state.pen.palmReject && e.pointerType==='touch') return;
   if(state.pen.penOnly && !(e.pointerType==='pen' || e.pointerType==='mouse')) return;
-
   canvas.setPointerCapture?.(e.pointerId);
-  state.pointerId = e.pointerId;
+  state.pointerId=e.pointerId;
 
-  const p = toCanvas(e.clientX, e.clientY);
-
+  const p=toCanvas(e.clientX,e.clientY);
   if(state.currentTool==='pen' || state.currentTool==='hl'){
-    const base  = state.currentTool==='pen' ? (state.baseSize||3) : state.hl.size;
-    const color = state.currentTool==='pen' ? (state.penColor||'#fffae6') : state.hl.color;
-    const alpha = state.currentTool==='pen' ? (state.baseAlpha??1) : 0.35;
-    state.stroke = { tool:state.currentTool, color, size:effectiveSize(base,e), alpha, points:[p] };
-    state.drawing = true;
+    const base = state.currentTool==='pen' ? (state.baseSize||3) : state.hl.size;
+    const color= state.currentTool==='pen' ? (state.penColor||'#fffae6') : state.hl.color;
+    const alpha= state.currentTool==='pen' ? (state.baseAlpha??1) : 0.35;
+    state.stroke={ tool:state.currentTool, color, size:effectiveSize(base,e), alpha, points:[p] };
+    state.drawing=true;
   }else if(state.currentTool==='eraser'){
-    state.drawing = true; eraseAt(p.x,p.y,state.eraser.radius);
+    state.drawing=true; eraseAt(p.x,p.y,state.eraser.radius);
   }else if(state.currentTool==='text'){
-    // テキスト入力開始
-    textInput.style.left = (e.clientX - 6) + 'px';
-    textInput.style.top  = (e.clientY - 10)+ 'px';
-    textInput.style.display='block';
-    textInput.value=''; textInput.focus();
-    const page = state.pages[state.pageIndex];
-    const base = { x:p.x, y:p.y, color:state.text.color, size:state.text.size, font:state.text.font, text:'' };
-
-    const onConfirm = ()=>{
-      const v = textInput.value.trim();
-      textInput.style.display='none';
-      textInput.onblur = null; textInput.onkeydown = null;
-      if(!v) return;
-      base.text = v; page.texts.push(base); render();
+    textInput.style.left=(e.clientX-6)+'px'; textInput.style.top=(e.clientY-10)+'px';
+    textInput.style.display='block'; textInput.value=''; textInput.focus();
+    const page=state.pages[state.pageIndex];
+    const base={ x:p.x,y:p.y,color:state.text.color,size:state.text.size,font:state.text.font,text:'' };
+    const onConfirm=()=>{
+      const v=textInput.value.trim(); textInput.style.display='none';
+      textInput.onblur=null; textInput.onkeydown=null; if(!v) return;
+      base.text=v; page.texts.push(base); render();
     };
-    textInput.onkeydown = ev=>{
-      if(ev.key==='Enter'){ ev.preventDefault(); onConfirm(); }
-      if(ev.key==='Escape'){ textInput.style.display='none'; textInput.onblur=null; textInput.onkeydown=null; }
-    };
-    textInput.onblur = onConfirm;
+    textInput.onkeydown=(ev)=>{ if(ev.key==='Enter'){ ev.preventDefault(); onConfirm(); } if(ev.key==='Escape'){ textInput.style.display='none'; textInput.onblur=null; textInput.onkeydown=null; } };
+    textInput.onblur=onConfirm;
   }
   render();
 });
-
 canvas.addEventListener('pointermove', (e)=>{
   if(!state.drawing || e.pointerId!==state.pointerId) return;
-  const p = toCanvas(e.clientX, e.clientY);
+  const p=toCanvas(e.clientX,e.clientY);
   if(state.currentTool==='pen' || state.currentTool==='hl'){
     state.stroke.points.push(p);
   }else if(state.currentTool==='eraser'){
@@ -624,106 +570,75 @@ canvas.addEventListener('pointermove', (e)=>{
   }
   render();
 });
-
 canvas.addEventListener('pointerup', (e)=>{
   if(e.pointerId!==state.pointerId) return;
   canvas.releasePointerCapture?.(e.pointerId);
   state.drawing=false; state.pointerId=null;
-
   if(state.stroke && (state.currentTool==='pen' || state.currentTool==='hl')){
-    state.pages[state.pageIndex].strokes.push(state.stroke);
-    state.stroke=null; render();
+    state.pages[state.pageIndex].strokes.push(state.stroke); state.stroke=null; render();
   }
 });
 
-/* =======================
-   ページ
-======================= */
+/* ====== ページ ====== */
 btnPrev.onclick = ()=>{ if(state.pageIndex>0){ state.pageIndex--; updatePageIndicator(); render(); } };
 btnNext.onclick = ()=>{ if(state.pageIndex<state.pages.length-1){ state.pageIndex++; updatePageIndicator(); render(); } };
 btnAdd.onclick  = ()=>{ state.pages.splice(state.pageIndex+1,0,newPage()); state.pageIndex++; updatePageIndicator(); render(); };
 btnDel.onclick  = ()=>{ if(state.pages.length===1){ alert('これ以上削除できません'); return; }
   state.pages.splice(state.pageIndex,1); state.pageIndex=Math.max(0,state.pageIndex-1); updatePageIndicator(); render(); };
 
-/* =======================
-   保存/読込・PNG/印刷・共有
-======================= */
+/* ====== 保存/読込・PNG・印刷・共有 ====== */
 btnSave.onclick = ()=>{
-  const json = JSON.stringify({ bgColor:state.bgColor, guide:state.guide, pages:state.pages.map(p=>({strokes:p.strokes,texts:p.texts})) }, null, 2);
-  const blob = new Blob([json], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download='note-link.json'; a.click();
-  URL.revokeObjectURL(url);
+  const json = JSON.stringify({ version:VERSION, run:RUNNO, bgColor:state.bgColor, guide:state.guide, pages:state.pages.map(p=>({strokes:p.strokes,texts:p.texts})) }, null, 2);
+  const blob = new Blob([json],{type:'application/json'}), url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='note-link.json'; a.click(); URL.revokeObjectURL(url);
 };
 btnLoad.onclick = ()=> fileLoad.click();
 fileLoad.onchange = async e=>{
-  const f = e.target.files[0]; if(!f) return;
-  const txt = await f.text();
+  const f=e.target.files[0]; if(!f) return;
   try{
-    const data = JSON.parse(txt);
-    state.bgColor = data.bgColor || state.bgColor;
-    state.guide = Object.assign(state.guide, data.guide||{});
-    state.pages = (data.pages||[]).map(p=>({ strokes:p.strokes||[], texts:p.texts||[], bg:null, bgBitmap:null, bgSize:{w:0,h:0} }));
-    state.pageIndex = 0; updatePageIndicator(); render();
-  }catch(err){ alert('JSONの読み込みに失敗しました'); }
+    const data=JSON.parse(await f.text());
+    state.bgColor=data.bgColor||state.bgColor; Object.assign(state.guide, data.guide||{});
+    state.pages=(data.pages||[]).map(p=>({strokes:p.strokes||[], texts:p.texts||[], bg:null, bgBitmap:null, bgSize:{w:0,h:0}}));
+    state.pageIndex=0; updatePageIndicator(); render();
+  }catch{ alert('JSONの読み込みに失敗しました'); }
   fileLoad.value='';
 };
-
 async function exportPNG(){
-  const r = canvas.getBoundingClientRect();
-  const w = Math.floor(r.width), h = Math.floor(r.height);
-  const off = document.createElement('canvas');
-  off.width = Math.round(w * dpr); off.height = Math.round(h * dpr);
-  const octx = off.getContext('2d'); octx.scale(dpr, dpr);
-
-  // 背景色・背景画像
-  octx.fillStyle = state.bgColor; octx.fillRect(0,0,w,h);
-  const page = state.pages[state.pageIndex];
-  if(page.bgBitmap){ octx.drawImage(page.bgBitmap,0,0); }
-
-  if(state.guide.includeExport) drawGuide(octx);
-  for(const s of page.strokes) drawStroke(octx,s);
-  drawTexts(octx);
-
-  const url = off.toDataURL('image/png');
-  const a = document.createElement('a'); a.href = url; a.download = `note-page-${state.pageIndex+1}.png`; a.click();
+  const r=canvas.getBoundingClientRect(), w=Math.floor(r.width), h=Math.floor(r.height);
+  const off=document.createElement('canvas'); off.width=Math.round(w*dpr); off.height=Math.round(h*dpr);
+  const o=off.getContext('2d'); o.scale(dpr,dpr);
+  o.fillStyle=state.bgColor; o.fillRect(0,0,w,h);
+  const page=state.pages[state.pageIndex]; if(page.bgBitmap) o.drawImage(page.bgBitmap,0,0);
+  if(state.guide.includeExport) drawGuide(o);
+  for(const s of page.strokes) drawStroke(o,s); drawTexts(o);
+  const url=off.toDataURL('image/png'); const a=document.createElement('a'); a.href=url; a.download=`note-page-${state.pageIndex+1}.png`; a.click();
 }
 btnExportPng.onclick = exportPNG;
-
 btnPrint.onclick = ()=> window.print();
-
 btnShare.onclick = async ()=>{
   const shareUrl = location.href;
-  if(navigator.share){
-    try{ await navigator.share({ title:'Note Link', url:shareUrl }); return; }catch{}
-  }
-  try{
-    await navigator.clipboard.writeText(shareUrl);
-    alert('URLをクリップボードにコピーしました。');
-  }catch{
-    prompt('共有URLをコピーしてください：', shareUrl);
-  }
+  if(navigator.share){ try{ await navigator.share({title:`Note Link ${VERSION}`, url:shareUrl}); return; }catch{} }
+  try{ await navigator.clipboard.writeText(shareUrl); alert('URLをクリップボードにコピーしました'); }
+  catch{ prompt('共有URLをコピーしてください：', shareUrl); }
 };
-
-/* 教師モード（編集不可トグル） */
+/* 教師モード */
 btnTeacher.onclick = ()=>{
-  state.teacher = !state.teacher;
+  state.teacher=!state.teacher;
   btnTeacher.textContent = state.teacher? '教師モード(閲覧専用)' : '教師モード';
 };
 
-/* =======================
-   Home（入口）
-======================= */
-let showHomeOnStart = false; // ←必要時に true へ
-const homeModal = document.getElementById('homeModal');
-const openHome = ()=> homeModal.style.display='block';
-const closeHome= ()=> homeModal.style.display='none';
-document.getElementById('homeNew').onclick    = ()=>{ state.pages=[newPage()]; state.pageIndex=0; closeHome(); render(); updatePageIndicator(); };
-document.getElementById('homeOpen').onclick   = ()=> alert('過去ノートは次フェーズで');
-document.getElementById('homeAssign').onclick = ()=> alert('先生の課題は次フェーズで');
-document.getElementById('homeBooks').onclick  = ()=> alert('問題集は次フェーズで');
-document.getElementById('homeTrash').onclick  = ()=> alert('ゴミ箱は次フェーズで');
+/* ====== Home（最初に表示） ====== */
+const homeModal=document.getElementById('homeModal');
+const openHome =()=> homeModal.style.display='block';
+const closeHome=()=> homeModal.style.display='none';
+document.getElementById('homeNew').onclick = ()=>{ state.pages=[newPage()]; state.pageIndex=0; closeHome(); render(); updatePageIndicator(); };
+document.getElementById('homeOpen').onclick   = ()=> alert('過去ノートは次フェーズで対応');
+document.getElementById('homeAssign').onclick = ()=> alert('先生の課題は次フェーズで対応');
+document.getElementById('homeBooks').onclick  = ()=> alert('問題集は次フェーズで対応');
+document.getElementById('homeTrash').onclick  = ()=> alert('ゴミ箱は次フェーズで対応');
 document.getElementById('homeClose').onclick  = closeHome;
+
+const showHomeOnStart = true; // ★今回の要望：最初からホームを出す
 if(showHomeOnStart) openHome();
 </script>
 </body>
