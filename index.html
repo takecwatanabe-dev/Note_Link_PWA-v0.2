@@ -1,121 +1,407 @@
-<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8" />
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Note Link v0.6.7 / No.11</title>
 <style>
-:root{--bg:#0f172a;--panel:#111827;--ink:#e5e7eb;--accent:#50C878;--muted:#374151;}
+:root{
+  --bg:#0b1220;         /* 背景 */
+  --panel:#111827;      /* パネル */
+  --ink:#e5e7eb;        /* 文字 */
+  --muted:#374151;      /* 枠線 */
+  --accent:#4ade80;     /* 強調（緑） */
+  --sbw:56px;           /* サイドバー幅（展開時） */
+  --sbw-collapsed:16px; /* サイドバー幅（畳み時：細いレールのみ） */
+  --tool:40px;          /* ツールボタンの一辺 */
+  --radius:12px;
+  --hbar:48px;          /* 上部バー高さ */
+}
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;overflow:hidden}
-
-/* ヘッダー（文字ズレ対策：行高固定＋中央寄せ） */
-header{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:var(--panel);border-bottom:1px solid var(--muted)}
-.brand{font-weight:700}
-.ver{font-size:12px;margin-left:6px;padding:2px 8px;border:1px solid var(--muted);border-radius:10px;opacity:.9}
-.actions{display:flex;gap:6px;align-items:center}
-.actions button{display:inline-flex;align-items:center;justify-content:center;height:32px;line-height:32px;padding:0 10px;border:1px solid var(--muted);border-radius:8px;background:#0b1220;color:var(--ink);cursor:pointer}
-.actions button:hover{border-color:var(--accent)}
-
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif}
+button{height:32px;padding:0 10px;background:#0f172a;border:1px solid var(--muted);border-radius:10px;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+button:hover{border-color:var(--accent)}
+button:active{transform:translateY(1px)}
+/* 上部バー */
+header{height:var(--hbar);display:flex;align-items:center;justify-content:space-between;padding:0 10px;background:var(--panel);border-bottom:1px solid var(--muted);gap:8px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.pager{display:flex;align-items:center;gap:6px}
+.pager .count{min-width:64px;text-align:center;font-variant-numeric:tabular-nums}
+.actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 /* レイアウト */
-.wrap{display:grid;grid-template-columns:60px 1fr;height:calc(100% - 48px)}
-.wrap.collapsedX{grid-template-columns:28px 1fr}
-.sidebar{position:relative;background:var(--panel);border-right:1px solid var(--muted)}
-/* トグルは常に左上。ツールとは別レイヤーにして z-index を上げる */
-.toggleBar{position:absolute;top:8px;left:8px;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#0b1220;border:1px solid var(--muted);cursor:pointer;z-index:5}
-/* ツール列はトグル分の余白を必ず確保（重なり防止） */
-.tools{padding:56px 8px 8px 8px;display:flex;flex-direction:column;gap:8px}
-
-/* ツールボタン */
-.toolGroup{display:flex;flex-direction:column;align-items:center;gap:4px}
-.tool{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#0b1220;border:1px solid var(--muted);cursor:pointer;transition:box-shadow .15s,border-color .15s}
-.tool.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(80,200,120,.55),0 0 12px rgba(80,200,120,.45)}
-/* 設定ギアは細線。アクティブ時のみ細いグロー */
-.gear{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;border:1px solid var(--muted);opacity:.9}
-.gear.active{border-color:var(--accent);box-shadow:0 0 0 1px rgba(80,200,120,.5)}
-
-/* 折りたたみ（縦）：高さ制限だけ。横はwrap側で幅を細くする */
-.sidebar.collapsedY{max-height:44px;overflow:hidden}
-.stage{background:#0b1220;position:relative}
-canvas{display:block;width:100%;height:100%;background:transparent}
+.app{display:grid;grid-template-columns:var(--sbw) 1fr;grid-template-rows:1fr;height:calc(100% - var(--hbar))}
+.app.collapsed{grid-template-columns:var(--sbw-collapsed) 1fr}
+/* サイドバー */
+.sidebar{position:relative;background:var(--panel);border-right:1px solid var(--muted);padding:8px;overflow:hidden}
+.tools{display:flex;flex-direction:column;gap:8px}
+.tool, .toggle, .gear{
+  width:var(--tool);height:var(--tool);border-radius:12px;border:1px solid var(--muted);
+  background:#0f172a;display:grid;place-items:center;font-size:18px;user-select:none
+}
+.tool{position:relative}
+.tool.active{
+  outline:2px solid var(--accent);
+  box-shadow:0 0 12px rgba(74,222,128,.5)
+}
+.tool .label{position:absolute;left:calc(100% + 8px);top:50%;transform:translateY(-50%);font-size:12px;opacity:.85;white-space:nowrap}
+.toggle{position:absolute;left:8px;top:8px;z-index:2}
+.sidebar.collapsed .tools{display:none}
+.sidebar.collapsed .gear{display:none}
+.sidebar.collapsed .toggle{left: -2px; top:8px; width:var(--tool); height:var(--tool)}
+.gear{position:absolute;left:8px;bottom:8px}
+.canvasWrap{position:relative}
+#canvas{display:block;width:100%;height:100%;background:transparent}
+/* フライアウト（設定） */
+.fly{position:absolute;top:72px;left:72px;min-width:320px;max-width:min(420px,90vw);max-height:70vh;overflow:auto;background:#111827f5;border:1px solid var(--muted);border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.45);backdrop-filter:blur(6px);padding:10px}
+.fly.hidden{display:none}
+.fly .head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.fly .title{font-weight:700}
+.row{display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap}
+.row label{min-width:84px;opacity:.9}
+.range{width:160px}
+.badge{font-size:12px;padding:2px 8px;border:1px solid var(--muted);border-radius:999px;opacity:.8}
+.small{font-size:12px;opacity:.75}
 </style>
 </head>
 <body>
 <header>
-  <div class="brand">Note Link <span class="ver">v0.6.7 / No.11</span></div>
+  <div class="brand"><span class="dot"></span> Note Link <span class="badge" id="ver"></span></div>
   <div class="actions">
-    <button id="btnPrev">◀</button>
-    <span id="pageLabel">1 / 1</span>
-    <button id="btnNext">▶</button>
+    <div class="pager">
+      <button id="prev">◀</button>
+      <span class="count" id="pageCount">1 / 1</span>
+      <button id="next">▶</button>
+      <button id="add">＋</button>
+      <button id="del">－</button>
+    </div>
     <button id="btnPrint">印刷</button>
-    <button id="btnPNG">PNG</button>
+    <button id="btnPng">PNG</button>
     <button id="btnSave">保存(JSON)</button>
     <button id="btnLoad">読込(JSON)</button>
+    <input id="fileJson" type="file" accept="application/json" style="display:none">
     <button id="btnShare">共有</button>
+    <button id="btnTeacher">教師モード</button>
   </div>
 </header>
 
-<div class="wrap" id="wrap">
+<div class="app" id="app">
   <aside class="sidebar" id="sidebar">
-    <div class="toggleBar" id="toggleBar">△</div>
+    <button class="toggle" id="toggle" title="ツールバーの開閉">▽</button>
     <div class="tools">
-      <div class="toolGroup"><div class="tool" id="toolPen" title="ペン">✎</div><div class="gear" id="gearPen" title="ペン設定">⚙</div></div>
-      <div class="toolGroup"><div class="tool" id="toolHL" title="蛍光">🖍</div><div class="gear" id="gearHL">⚙</div></div>
-      <div class="toolGroup"><div class="tool" id="toolEraser" title="消しゴム">⌫</div><div class="gear" id="gearEraser">⚙</div></div>
-      <div class="toolGroup"><div class="tool" id="toolPan" title="移動">🖐</div><div class="gear" id="gearPan">⚙</div></div>
-      <div class="toolGroup"><div class="tool" id="toolText" title="テキスト">⌨</div><div class="gear" id="gearText">⚙</div></div>
-      <div class="toolGroup"><div class="tool" id="toolBg" title="背景">🎨</div><div class="gear" id="gearBg">⚙</div></div>
+      <button class="tool active" data-tool="pen" title="ペン">✎<span class="label">ペン</span></button>
+      <button class="tool" data-tool="hl" title="蛍光ペン">🖍<span class="label">蛍光</span></button>
+      <button class="tool" data-tool="eraser" title="消しゴム">⌫<span class="label">消</span></button>
+      <button class="tool" data-tool="pan" title="移動/ズーム">🖐<span class="label">移動</span></button>
+      <button class="tool" data-tool="text" title="テキスト">⌨<span class="label">テキスト</span></button>
     </div>
+    <button class="gear" id="gear" title="設定（アクティブツール）">⚙</button>
   </aside>
-  <main class="stage"><canvas id="canvas"></canvas></main>
+
+  <main class="canvasWrap">
+    <canvas id="canvas"></canvas>
+
+    <!-- 設定フライアウト -->
+    <div class="fly hidden" id="fly">
+      <div class="head">
+        <div class="title" id="flyTitle">設定</div>
+        <div style="display:flex;gap:6px">
+          <button id="flyClose">✕</button>
+        </div>
+      </div>
+      <div id="flyBody"></div>
+    </div>
+
+    <!-- テキスト入力 -->
+    <input id="textInput" class="small" style="position:absolute;display:none;border:1px solid #94a3b8;border-radius:6px;padding:4px 6px;background:#fff;color:#111827">
+  </main>
 </div>
 
 <script>
-/* 折りたたみ：△/▽とツールが重ならないように、toolsに固定の上余白を確保済み */
-const wrap = document.getElementById('wrap');
+/* ====== バージョン表示 ====== */
+const APP_VER = 'v0.6.7', RUN_NO = 'No.11';
+document.getElementById('ver').textContent = `${APP_VER} / ${RUN_NO}`;
+
+/* ====== 状態 ====== */
+const state = {
+  pages: [], page: 0,
+  current: 'pen',
+  teacherMode: false,
+  view: {x:0,y:0,scale:1},
+  pen: {color:'#fffae6', size:3, alpha:1, pressure:true, gain:1.1},
+  hl: {color:'#ffff66', size:16, alpha:0.35},
+  eraser: {mode:'area', radius:18}, // 'area' | 'all'
+  text: {color:'#ffffff', size:18, font:"'Noto Sans JP',sans-serif"},
+  drawing:false, stroke:null, pointers:new Map(),
+  undo:[], redo:[],
+};
+function newPage(){ return {strokes:[], texts:[], bgColor:'#0b1220'}; }
+state.pages.push(newPage());
+
+/* ====== 要素 ====== */
+const app = document.getElementById('app');
 const sidebar = document.getElementById('sidebar');
-const toggleBar = document.getElementById('toggleBar');
-toggleBar.addEventListener('click', ()=>{
-  sidebar.classList.toggle('collapsedY');
-  wrap.classList.toggle('collapsedX');
-  toggleBar.textContent = sidebar.classList.contains('collapsedY') ? '▽' : '△';
-});
-
-/* ツール選択：アクティブ時に太めの緑グロー復帰＋ギアは細グロー */
-const tools = [...document.querySelectorAll('.tool')];
-const gears = [...document.querySelectorAll('.gear')];
-function setActiveTool(el){
-  tools.forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  // ギアはそのツールだけ細グロー
-  gears.forEach(g=>g.classList.remove('active'));
-  const pair = el.parentElement.querySelector('.gear');
-  pair?.classList.add('active');
-}
-tools.forEach(t=>t.addEventListener('click',()=>setActiveTool(t)));
-setActiveTool(document.getElementById('toolPen')); // 初期アクティブをペン
-
-/* キャンバス（最低限：サイズ合わせのみ） */
+const toggleBtn = document.getElementById('toggle');
+const tools = Array.from(document.querySelectorAll('.tool'));
+const gear = document.getElementById('gear');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const dpr = Math.max(1, window.devicePixelRatio||1);
-function fit(){ const r = canvas.parentElement.getBoundingClientRect(); canvas.width = Math.floor(r.width*dpr); canvas.height = Math.floor(r.height*dpr); ctx.setTransform(dpr,0,0,dpr,0,0); }
-addEventListener('resize', fit); fit();
+const dpr = Math.max(1, window.devicePixelRatio || 1);
+const fly = document.getElementById('fly');
+const flyTitle = document.getElementById('flyTitle');
+const flyBody = document.getElementById('flyBody');
+const flyClose = document.getElementById('flyClose');
+const textInput = document.getElementById('textInput');
+const pageCount = document.getElementById('pageCount');
 
-/* 共有/印刷/PNG（背景込み） */
-document.getElementById('btnPrint').onclick=()=>window.print();
-document.getElementById('btnPNG').onclick=()=>{ const a=document.createElement('a'); a.download='note.png'; a.href=canvas.toDataURL('image/png'); a.click(); };
-document.getElementById('btnShare').onclick=async()=>{
-  const url=location.href;
-  if(navigator.share){ try{ await navigator.share({title:'Note Link',url}); }catch{} }
-  else{ await navigator.clipboard.writeText(url); alert('URLをコピーしました'); }
+/* ====== レイアウト ====== */
+function resize(){
+  const r = canvas.parentElement.getBoundingClientRect();
+  canvas.width = Math.floor(r.width * dpr);
+  canvas.height = Math.floor(r.height * dpr);
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr,dpr);
+  render();
+}
+addEventListener('resize', resize);
+
+/* ====== サイドバー開閉（完全に畳んでもキャンバスを邪魔しない） ====== */
+let collapsed = false;
+function setCollapsed(b){
+  collapsed = b;
+  app.classList.toggle('collapsed', collapsed);
+  sidebar.classList.toggle('collapsed', collapsed);
+  toggleBtn.textContent = collapsed ? '△' : '▽';
+  resize();
+}
+toggleBtn.onclick = ()=> setCollapsed(!collapsed);
+
+/* ====== ツール切替（ギアは1つ、切替時は設定を閉じる） ====== */
+function setTool(name){
+  state.current = name;
+  tools.forEach(t => t.classList.toggle('active', t.dataset.tool===name));
+  closeFly();
+}
+tools.forEach(t => t.onclick = ()=> setTool(t.dataset.tool));
+
+/* ====== 設定フライアウト ====== */
+function openFly(){
+  fly.classList.remove('hidden');
+  flyTitle.textContent = ({pen:'ペン設定', hl:'蛍光ペン設定', eraser:'消しゴム設定', pan:'移動/ズーム', text:'テキスト設定'})[state.current] || '設定';
+  flyBody.innerHTML = '';
+
+  if(state.current==='pen'){
+    flyBody.append(
+      rowColor('色', state.pen.color, v=>{ state.pen.color=v; }),
+      rowRange('太さ',1,30,state.pen.size,v=> state.pen.size=v),
+      rowRange('不透明',0.1,1,state.pen.alpha,v=> state.pen.alpha=v,0.05),
+      rowCheck('筆圧', state.pen.pressure, v=> state.pen.pressure=v),
+      rowRange('感度',0,3,state.pen.gain,v=> state.pen.gain=v,0.1)
+    );
+  }
+  if(state.current==='hl'){
+    flyBody.append(
+      rowColor('色', state.hl.color, v=> state.hl.color=v),
+      rowRange('太さ',4,80,state.hl.size,v=> state.hl.size=v)
+    );
+  }
+  if(state.current==='eraser'){
+    flyBody.append(
+      rowSelect('方式',['部分消去:area','全面消去:all'], state.eraser.mode, v=> state.eraser.mode=v),
+      rowRange('半径(px)',8,60,state.eraser.radius,v=> state.eraser.radius=v),
+      rowButton('全面消去する', ()=>{ const p=state.pages[state.page]; p.strokes=[]; p.texts=[]; pushUndo(); render(); })
+    );
+  }
+  if(state.current==='text'){
+    flyBody.append(
+      rowColor('色', state.text.color, v=> state.text.color=v),
+      rowRange('サイズ',10,72,state.text.size,v=> state.text.size=v),
+      rowSelect('フォント',["ゴシック:'Noto Sans JP',sans-serif","明朝:'Hiragino Mincho ProN','Yu Mincho',serif","等幅:'Courier New',monospace"], state.text.font, v=> state.text.font=v)
+    );
+  }
+}
+function closeFly(){ fly.classList.add('hidden'); }
+gear.onclick = openFly;
+flyClose.onclick = closeFly;
+
+/* ====== UI ヘルパー ====== */
+function row(label, el){ const d=document.createElement('div'); d.className='row'; const l=document.createElement('label'); l.textContent=label; d.append(l, el); return d;}
+function rowRange(label,min,max,val,on,valStep=1){ const i=document.createElement('input'); i.type='range'; i.min=min;i.max=max;i.step=valStep;i.value=val;i.className='range'; const s=document.createElement('span'); s.textContent=String(val); i.oninput=()=>{ s.textContent=i.value; on(parseFloat(i.value)); render(); }; return row(label, wrap(i,s)); }
+function rowColor(label,val,on){ const i=document.createElement('input'); i.type='color'; i.value=val; i.oninput=()=>{ on(i.value); render(); }; return row(label,i); }
+function rowCheck(label,val,on){ const i=document.createElement('input'); i.type='checkbox'; i.checked=val; i.onchange=()=>on(i.checked); return row(label,i); }
+function rowSelect(label,items,val,on){ const sel=document.createElement('select'); for(const it of items){ const [text,v=it]=it.split(':'); const o=document.createElement('option'); o.value=v;o.textContent=text; sel.append(o);} sel.value=val; sel.onchange=()=> on(sel.value); return row(label,sel); }
+function rowButton(text,fn){ const b=document.createElement('button'); b.textContent=text; b.onclick=fn; return row('',b); }
+function wrap(...els){ const d=document.createElement('div'); d.style.display='inline-flex'; d.style.gap='8px'; d.append(...els); return d; }
+
+/* ====== ページ操作 ====== */
+function updatePageCount(){ pageCount.textContent = `${state.page+1} / ${state.pages.length}`; }
+document.getElementById('prev').onclick = ()=>{ if(state.page>0){ state.page--; updatePageCount(); render(); } };
+document.getElementById('next').onclick = ()=>{ if(state.page<state.pages.length-1){ state.page++; updatePageCount(); render(); } };
+document.getElementById('add').onclick  = ()=>{ state.pages.splice(state.page+1,0,newPage()); state.page++; pushUndo(); updatePageCount(); render(); };
+document.getElementById('del').onclick  = ()=>{ if(state.pages.length===1) return; state.pages.splice(state.page,1); state.page=Math.max(0,state.page-1); pushUndo(); updatePageCount(); render(); };
+
+/* ====== Undo/Redo（最小） ====== */
+function snapshot(){ return JSON.stringify({pages:state.pages,page:state.page}); }
+function restore(s){ const o=JSON.parse(s); state.pages=o.pages; state.page=o.page; render(); updatePageCount(); }
+function pushUndo(){ state.undo.push(snapshot()); state.redo.length=0; }
+
+/* ====== 描画 ====== */
+function drawStroke(s){
+  if(!s.points||s.points.length<2) return;
+  ctx.save();
+  ctx.lineCap=ctx.lineJoin='round';
+  ctx.globalAlpha = s.alpha ?? 1;
+  ctx.strokeStyle = s.color; ctx.lineWidth = s.size;
+  ctx.beginPath(); ctx.moveTo(s.points[0].x,s.points[0].y);
+  for(let i=1;i<s.points.length;i++){ ctx.lineTo(s.points[i].x,s.points[i].y); }
+  ctx.stroke();
+  ctx.restore();
+}
+function render(){
+  const r = canvas.getBoundingClientRect();
+  ctx.clearRect(0,0,r.width,r.height);
+  // 背景（単色）
+  ctx.fillStyle = state.pages[state.page].bgColor || '#0b1220';
+  ctx.fillRect(0,0,r.width,r.height);
+  // ストローク
+  for(const s of state.pages[state.page].strokes) drawStroke(s);
+  // 進行中
+  if(state.stroke) drawStroke(state.stroke);
+  // テキスト
+  const page = state.pages[state.page];
+  for(const t of page.texts){ ctx.save(); ctx.fillStyle=t.color; ctx.font=`${t.size}px ${t.font}`; ctx.textBaseline='top'; ctx.fillText(t.text,t.x,t.y); ctx.restore(); }
+}
+
+/* ====== 入力（Pointer） ====== */
+function toCanvasXY(e){
+  const b = canvas.getBoundingClientRect();
+  return {x: (e.clientX - b.left), y: (e.clientY - b.top)};
+}
+canvas.addEventListener('pointerdown', e=>{
+  if(state.teacherMode) return;
+  canvas.setPointerCapture(e.pointerId);
+  state.pointers.set(e.pointerId,true);
+
+  if(state.current==='text'){
+    const p = toCanvasXY(e);
+    textInput.style.left = (p.x+8)+'px';
+    textInput.style.top  = (p.y-6)+'px';
+    textInput.style.display='block';
+    textInput.value='';
+    textInput.focus();
+    const confirm = ()=>{
+      if(textInput.value.trim()){
+        state.pages[state.page].texts.push({text:textInput.value,color:state.text.color,size:state.text.size,font:state.text.font,x:p.x,y:p.y});
+        pushUndo(); render();
+      }
+      textInput.style.display='none';
+      textInput.onblur = null; textInput.onkeydown = null;
+    };
+    textInput.onkeydown = ev=>{ if(ev.key==='Enter'){confirm();} if(ev.key==='Escape'){ textInput.style.display='none'; } };
+    textInput.onblur = confirm;
+    return;
+  }
+
+  const p = toCanvasXY(e);
+  if(state.current==='eraser'){
+    if(state.eraser.mode==='all'){
+      state.pages[state.page].strokes=[]; state.pages[state.page].texts=[]; pushUndo(); render(); return;
+    }else{
+      // area : 半径内に点があるストロークを消す（ラフだが実用）
+      const r = state.eraser.radius;
+      const page = state.pages[state.page];
+      page.strokes = page.strokes.filter(s => !s.points.some(pt => (pt.x-p.x)**2+(pt.y-p.y)**2 <= r*r));
+      pushUndo(); render(); return;
+    }
+  }
+
+  // pen / hl
+  const isHL = state.current==='hl';
+  const base = isHL ? state.hl : state.pen;
+  const stroke = {
+    tool: state.current,
+    color: base.color,
+    size: base.size,
+    alpha: isHL ? state.hl.alpha : state.pen.alpha,
+    points: [p]
+  };
+  state.stroke = stroke; state.drawing=true; render();
+});
+canvas.addEventListener('pointermove', e=>{
+  if(!state.drawing && state.current!=='pan') return;
+  if(!state.pointers.get(e.pointerId)) return;
+
+  if(state.current==='pan'){
+    // 今回は最小実装：スクロールで OK（余白確保のため保留）
+    return;
+  }
+
+  if(state.stroke){
+    const p = toCanvasXY(e);
+    // 筆圧対応（ペンのみ）
+    if(state.current==='pen' && state.pen.pressure && typeof e.pressure==='number'){
+      state.stroke.size = Math.max(0.5, (state.pen.size * (0.4 + e.pressure * state.pen.gain)));
+    }
+    state.stroke.points.push(p);
+    render();
+  }
+});
+function endPointer(e){
+  if(state.pointers.has(e.pointerId)) state.pointers.delete(e.pointerId);
+  if(state.stroke){
+    state.pages[state.page].strokes.push(state.stroke);
+    state.stroke=null; state.drawing=false;
+    pushUndo(); render();
+  }
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+
+/* ====== PNG / 印刷 / 共有 ====== */
+document.getElementById('btnPng').onclick = async ()=>{
+  const url = canvas.toDataURL('image/png');
+  const a = document.createElement('a'); a.href=url; a.download = `note-page-${state.page+1}.png`; a.click();
+};
+document.getElementById('btnPrint').onclick = ()=> window.print();
+document.getElementById('btnShare').onclick = async ()=>{
+  try{
+    const blob = await new Promise(res=> canvas.toBlob(res,'image/png'));
+    const file = new File([blob], `note-page-${state.page+1}.png`, {type:'image/png'});
+    if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:'Note Link', text:'ノート共有'});
+    }else{
+      const url = canvas.toDataURL('image/png');
+      await navigator.clipboard.writeText(url);
+      alert('共有APIが使えないため、PNGデータURLをクリップボードにコピーしました。');
+    }
+  }catch(err){ alert('共有に失敗：'+err); }
 };
 
-/* JSON 保存/読込（簡易・ダミー） */
-document.getElementById('btnSave').onclick=()=>{
-  const blob=new Blob([JSON.stringify({pages:[{strokes:[]}]} ,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.download='note-link.json'; a.href=URL.createObjectURL(blob); a.click(); URL.revokeObjectURL(a.href);
+/* ====== 保存/読込(JSON) ====== */
+document.getElementById('btnSave').onclick = ()=>{
+  const data = JSON.stringify({pages:state.pages,page:state.page}, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='note-link.json'; a.click();
 };
-document.getElementById('btnLoad').onclick=()=>{
-  const i=document.createElement('input'); i.type='file'; i.accept='application/json';
-  i.onchange=e=>{ const f=e.target.files[0]; if(!f) return; f.text().then(()=>alert('JSONを読み込みました（ダミー）')); };
-  i.click();
+document.getElementById('btnLoad').onclick = ()=> document.getElementById('fileJson').click();
+document.getElementById('fileJson').onchange = async (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  const txt = await f.text();
+  try{ const obj = JSON.parse(txt); state.pages = obj.pages || [newPage()]; state.page = obj.page||0; pushUndo(); updatePageCount(); render(); }
+  catch(err){ alert('JSONの読み込みに失敗しました'); }
+  e.target.value='';
 };
+
+/* ====== 教師モード（編集不可） ====== */
+document.getElementById('btnTeacher').onclick = (e)=>{
+  state.teacherMode = !state.teacherMode;
+  e.target.textContent = state.teacherMode ? '生徒モード' : '教師モード';
+  alert(state.teacherMode ? '編集不可（教師モード）' : '編集可（生徒モード）');
+};
+
+/* ====== 初期化 ====== */
+updatePageCount();
+resize();
 </script>
-</body></html>
+</body>
+</html>
