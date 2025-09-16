@@ -1,111 +1,121 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <title>Note Link v0.6.6 / No.11</title>
-  <style>
-    :root { --bg:#0f172a; --panel:#111827; --ink:#e5e7eb; --accent:#50C878; --muted:#374151; }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; margin:0; background:var(--bg); color:var(--ink); font-family:sans-serif; overflow:hidden; }
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8" />
+<title>Note Link v0.6.7 / No.11</title>
+<style>
+:root{--bg:#0f172a;--panel:#111827;--ink:#e5e7eb;--accent:#50C878;--muted:#374151;}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;overflow:hidden}
 
-    /* ヘッダー */
-    header{ height:48px; display:flex; align-items:center; justify-content:space-between;
-      padding:0 12px; background:var(--panel); border-bottom:1px solid var(--muted); }
-    header .ver{ font-size:12px; margin-left:6px; padding:2px 8px; border:1px solid var(--muted); border-radius:10px; }
-    header .actions button{ display:inline-flex; align-items:center; justify-content:center;
-      height:32px; line-height:1; padding:0 10px; border:1px solid var(--muted); border-radius:6px; background:#0b1220; color:var(--ink); cursor:pointer; }
-    header .actions button:hover{ border-color:var(--accent); }
+/* ヘッダー（文字ズレ対策：行高固定＋中央寄せ） */
+header{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:var(--panel);border-bottom:1px solid var(--muted)}
+.brand{font-weight:700}
+.ver{font-size:12px;margin-left:6px;padding:2px 8px;border:1px solid var(--muted);border-radius:10px;opacity:.9}
+.actions{display:flex;gap:6px;align-items:center}
+.actions button{display:inline-flex;align-items:center;justify-content:center;height:32px;line-height:32px;padding:0 10px;border:1px solid var(--muted);border-radius:8px;background:#0b1220;color:var(--ink);cursor:pointer}
+.actions button:hover{border-color:var(--accent)}
 
-    /* レイアウト */
-    .wrap{ display:grid; grid-template-columns:60px 1fr; height:calc(100% - 48px); }
-    .wrap.collapsedX{ grid-template-columns:28px 1fr; }
-    .sidebar{ position:relative; background:var(--panel); border-right:1px solid var(--muted); }
-    .sidebar.collapsedY{ max-height:44px; overflow:hidden; }
+/* レイアウト */
+.wrap{display:grid;grid-template-columns:60px 1fr;height:calc(100% - 48px)}
+.wrap.collapsedX{grid-template-columns:28px 1fr}
+.sidebar{position:relative;background:var(--panel);border-right:1px solid var(--muted)}
+/* トグルは常に左上。ツールとは別レイヤーにして z-index を上げる */
+.toggleBar{position:absolute;top:8px;left:8px;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#0b1220;border:1px solid var(--muted);cursor:pointer;z-index:5}
+/* ツール列はトグル分の余白を必ず確保（重なり防止） */
+.tools{padding:56px 8px 8px 8px;display:flex;flex-direction:column;gap:8px}
 
-    /* トグル */
-    .toggleBar{ position:absolute; top:8px; left:8px; width:40px; height:40px;
-      border-radius:12px; display:grid; place-items:center;
-      border:1px solid var(--muted); background:#0b1220; z-index:5; cursor:pointer; }
+/* ツールボタン */
+.toolGroup{display:flex;flex-direction:column;align-items:center;gap:4px}
+.tool{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#0b1220;border:1px solid var(--muted);cursor:pointer;transition:box-shadow .15s,border-color .15s}
+.tool.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(80,200,120,.55),0 0 12px rgba(80,200,120,.45)}
+/* 設定ギアは細線。アクティブ時のみ細いグロー */
+.gear{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;border:1px solid var(--muted);opacity:.9}
+.gear.active{border-color:var(--accent);box-shadow:0 0 0 1px rgba(80,200,120,.5)}
 
-    /* ツール群 */
-    .sidebar .tools{ padding-top:56px; }
-    .toolGroup{ display:flex; flex-direction:column; align-items:center; gap:4px; margin:6px 0; }
-    .tool{ width:40px; height:40px; border-radius:12px; display:grid; place-items:center;
-      border:1px solid var(--muted); background:#0b1220; cursor:pointer; }
-    .tool.active{ border-color:var(--accent);
-      box-shadow:0 0 0 2px rgba(80,200,120,.6), 0 0 12px rgba(80,200,120,.55); }
-    .gear{ width:24px; height:24px; border-radius:8px; display:grid; place-items:center;
-      border:1px solid var(--muted); opacity:.85; }
-    .gear.active{ border-color:var(--accent); box-shadow:0 0 0 1px rgba(80,200,120,.5); }
-
-    .stage{ background:#0b1220; }
-    canvas{ display:block; width:100%; height:100%; background:transparent; }
-  </style>
+/* 折りたたみ（縦）：高さ制限だけ。横はwrap側で幅を細くする */
+.sidebar.collapsedY{max-height:44px;overflow:hidden}
+.stage{background:#0b1220;position:relative}
+canvas{display:block;width:100%;height:100%;background:transparent}
+</style>
 </head>
 <body>
-  <header>
-    <div class="brand">Note Link <span class="ver">v0.6.6 / No.11</span></div>
-    <div class="actions">
-      <button id="btnPrint">印刷</button>
-      <button id="btnPng">PNG</button>
-      <button id="btnSave">保存(JSON)</button>
-      <button id="btnLoad">読込(JSON)</button>
-      <button id="btnShare">共有</button>
-    </div>
-  </header>
-
-  <div class="wrap" id="wrap">
-    <aside class="sidebar" id="sidebar">
-      <div class="toggleBar" id="toggleBar">△</div>
-      <div class="tools">
-        <div class="toolGroup"><div class="tool" id="toolPen">✎</div><div class="gear">⚙</div></div>
-        <div class="toolGroup"><div class="tool" id="toolHL">🖍</div><div class="gear">⚙</div></div>
-        <div class="toolGroup"><div class="tool" id="toolEraser">⌫</div><div class="gear">⚙</div></div>
-        <div class="toolGroup"><div class="tool" id="toolPan">🖐</div><div class="gear">⚙</div></div>
-        <div class="toolGroup"><div class="tool" id="toolText">⌨</div><div class="gear">⚙</div></div>
-        <div class="toolGroup"><div class="tool" id="toolBg">🎨</div><div class="gear">⚙</div></div>
-      </div>
-    </aside>
-    <main class="stage"><canvas id="canvas"></canvas></main>
+<header>
+  <div class="brand">Note Link <span class="ver">v0.6.7 / No.11</span></div>
+  <div class="actions">
+    <button id="btnPrev">◀</button>
+    <span id="pageLabel">1 / 1</span>
+    <button id="btnNext">▶</button>
+    <button id="btnPrint">印刷</button>
+    <button id="btnPNG">PNG</button>
+    <button id="btnSave">保存(JSON)</button>
+    <button id="btnLoad">読込(JSON)</button>
+    <button id="btnShare">共有</button>
   </div>
+</header>
 
-  <script>
-    // トグル動作
-    const wrap=document.getElementById('wrap');
-    const sidebar=document.getElementById('sidebar');
-    const toggleBar=document.getElementById('toggleBar');
-    toggleBar.addEventListener('click',()=>{
-      sidebar.classList.toggle('collapsedY');
-      wrap.classList.toggle('collapsedX');
-      toggleBar.textContent=sidebar.classList.contains('collapsedY')?'▽':'△';
-    });
+<div class="wrap" id="wrap">
+  <aside class="sidebar" id="sidebar">
+    <div class="toggleBar" id="toggleBar">△</div>
+    <div class="tools">
+      <div class="toolGroup"><div class="tool" id="toolPen" title="ペン">✎</div><div class="gear" id="gearPen" title="ペン設定">⚙</div></div>
+      <div class="toolGroup"><div class="tool" id="toolHL" title="蛍光">🖍</div><div class="gear" id="gearHL">⚙</div></div>
+      <div class="toolGroup"><div class="tool" id="toolEraser" title="消しゴム">⌫</div><div class="gear" id="gearEraser">⚙</div></div>
+      <div class="toolGroup"><div class="tool" id="toolPan" title="移動">🖐</div><div class="gear" id="gearPan">⚙</div></div>
+      <div class="toolGroup"><div class="tool" id="toolText" title="テキスト">⌨</div><div class="gear" id="gearText">⚙</div></div>
+      <div class="toolGroup"><div class="tool" id="toolBg" title="背景">🎨</div><div class="gear" id="gearBg">⚙</div></div>
+    </div>
+  </aside>
+  <main class="stage"><canvas id="canvas"></canvas></main>
+</div>
 
-    // ツール選択
-    const tools=document.querySelectorAll('.tool');
-    tools.forEach(t=>{
-      t.addEventListener('click',()=>{
-        tools.forEach(el=>el.classList.remove('active'));
-        t.classList.add('active');
-      });
-    });
+<script>
+/* 折りたたみ：△/▽とツールが重ならないように、toolsに固定の上余白を確保済み */
+const wrap = document.getElementById('wrap');
+const sidebar = document.getElementById('sidebar');
+const toggleBar = document.getElementById('toggleBar');
+toggleBar.addEventListener('click', ()=>{
+  sidebar.classList.toggle('collapsedY');
+  wrap.classList.toggle('collapsedX');
+  toggleBar.textContent = sidebar.classList.contains('collapsedY') ? '▽' : '△';
+});
 
-    // 印刷/PNG/共有 ダミー実装
-    document.getElementById('btnPrint').onclick=()=>window.print();
-    document.getElementById('btnPng').onclick=()=>{
-      const canvas=document.getElementById('canvas');
-      const link=document.createElement('a');
-      link.download='note.png';
-      link.href=canvas.toDataURL('image/png');
-      link.click();
-    };
-    document.getElementById('btnShare').onclick=()=>{
-      if(navigator.share){
-        navigator.share({title:'Note Link', text:'共有します', url:location.href});
-      }else{
-        navigator.clipboard.writeText(location.href);
-        alert('URLをコピーしました');
-      }
-    };
-  </script>
-</body>
-</html>
+/* ツール選択：アクティブ時に太めの緑グロー復帰＋ギアは細グロー */
+const tools = [...document.querySelectorAll('.tool')];
+const gears = [...document.querySelectorAll('.gear')];
+function setActiveTool(el){
+  tools.forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  // ギアはそのツールだけ細グロー
+  gears.forEach(g=>g.classList.remove('active'));
+  const pair = el.parentElement.querySelector('.gear');
+  pair?.classList.add('active');
+}
+tools.forEach(t=>t.addEventListener('click',()=>setActiveTool(t)));
+setActiveTool(document.getElementById('toolPen')); // 初期アクティブをペン
+
+/* キャンバス（最低限：サイズ合わせのみ） */
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const dpr = Math.max(1, window.devicePixelRatio||1);
+function fit(){ const r = canvas.parentElement.getBoundingClientRect(); canvas.width = Math.floor(r.width*dpr); canvas.height = Math.floor(r.height*dpr); ctx.setTransform(dpr,0,0,dpr,0,0); }
+addEventListener('resize', fit); fit();
+
+/* 共有/印刷/PNG（背景込み） */
+document.getElementById('btnPrint').onclick=()=>window.print();
+document.getElementById('btnPNG').onclick=()=>{ const a=document.createElement('a'); a.download='note.png'; a.href=canvas.toDataURL('image/png'); a.click(); };
+document.getElementById('btnShare').onclick=async()=>{
+  const url=location.href;
+  if(navigator.share){ try{ await navigator.share({title:'Note Link',url}); }catch{} }
+  else{ await navigator.clipboard.writeText(url); alert('URLをコピーしました'); }
+};
+
+/* JSON 保存/読込（簡易・ダミー） */
+document.getElementById('btnSave').onclick=()=>{
+  const blob=new Blob([JSON.stringify({pages:[{strokes:[]}]} ,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.download='note-link.json'; a.href=URL.createObjectURL(blob); a.click(); URL.revokeObjectURL(a.href);
+};
+document.getElementById('btnLoad').onclick=()=>{
+  const i=document.createElement('input'); i.type='file'; i.accept='application/json';
+  i.onchange=e=>{ const f=e.target.files[0]; if(!f) return; f.text().then(()=>alert('JSONを読み込みました（ダミー）')); };
+  i.click();
+};
+</script>
+</body></html>
