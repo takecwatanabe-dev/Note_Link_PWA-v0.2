@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Note Link v0.2</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b1220">
+<style>
+:root{ --bg:#0b1220; --panel:#111827; --ink:#e5e7eb; --muted:#374151; --accent:#50C878; }
+*{ box-sizing:border-box; }
+html,body{ height:100%; margin:0; }
+body{ background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif; overflow:hidden; }
+header{ height:48px; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:0 12px; background:var(--panel); border-bottom:1px solid var(--muted); }
+header .brand{ display:flex; align-items:center; gap:8px; font-weight:700; }
+header .dot{ width:10px; height:10px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent); }
+header .ver{ font-size:12px; padding:2px 8px; border:1px solid var(--muted); border-radius:10px; opacity:.85; }
+header .actions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+button,input[type=color],input[type=file]{ background:#0b1220; color:var(--ink); border:1px solid var(--muted); border-radius:10px; padding:8px 10px; height:34px; font-size:14px; cursor:pointer; }
+button:hover{ border-color:var(--accent); }
+button.active{ outline:2px solid var(--accent); }
+.wrap{ display:grid; grid-template-columns:56px 1fr; height:calc(100% - 48px); }
+.sidebar{ background:var(--panel); border-right:1px solid var(--muted); padding:8px; display:flex; flex-direction:column; gap:8px; overflow:auto; }
+.sidebar.collapsedY{ max-height:56px; overflow:hidden; }
+.toolGroup{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+.tool{ width:40px; height:40px; border-radius:12px; display:grid; place-items:center; border:1px solid var(--muted); background:#0b1220; }
+.tool-label{ font-size:10px; opacity:.8; }
+.stage{ position:relative; }
+canvas{ display:block; width:100%; height:100%; background:transparent; }
+.flyout{ position:absolute; top:70px; left:70px; width:320px; max-width:90vw; max-height:70vh; overflow:auto; background:#111827ef; border:1px solid var(--muted); border-radius:14px; padding:10px; }
+.flyout.hidden{ display:none; }
+.row{ display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+.textInput{ position:absolute; background:#fff; color:#111; border:1px solid #94a3b8; border-radius:6px; padding:4px 6px; min-width:120px; outline:none; }
+.badge{ font-size:12px; padding:2px 6px; border:1px solid var(--muted); border-radius:8px; }
+.hint{ font-size:12px; opacity:.8; }
+.modal{ position:fixed; inset:0; display:none; place-items:center; background:rgba(0,0,0,.4); }
+.modal.open{ display:grid; }
+.modal .card{ width:min(560px,92vw); background:#111827; border:1px solid var(--muted); border-radius:14px; padding:14px; }
+.card h3{ margin:0 0 8px; }
+.card .sep{ height:1px; background:#2b3443; margin:8px 0; }
+.card .row b{ min-width:7em; display:inline-block; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="dot"></span> Note Link <span class="ver">v0.2</span><span id="modeBadge" class="badge">生徒モード</span></div>
+  <div class="actions">
+    <button id="btnUndo" title="元に戻す">↶</button>
+    <button id="btnRedo" title="やり直す">↷</button>
+    <button id="btnSave">保存(JSON)</button>
+    <button id="btnLoad">読込(JSON)</button>
+    <input id="fileLoad" type="file" accept="application/json" style="display:none">
+    <button id="btnExport" title="PNG出力">PNG</button>
+    <button id="btnShare">共有ガイド</button>
+    <button id="btnToggleMode" title="教師/生徒モード切替">教師モード</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside class="sidebar" id="sidebar">
+    <div class="toolGroup" id="groupToggle">
+      <button class="tool" id="toggleBar">△</button>
+      <div class="tool-label">開閉</div>
+    </div>
+    <div class="toolGroup"><button class="tool active" id="toolPen">✎</button><div class="tool-label">ペン</div></div>
+    <div class="toolGroup"><button class="tool" id="toolHL">🖍</button><div class="tool-label">蛍光</div></div>
+    <div class="toolGroup"><button class="tool" id="toolEraser">⌫</button><div class="tool-label">消</div></div>
+    <div class="toolGroup"><button class="tool" id="toolPan">🖐</button><div class="tool-label">移動</div></div>
+    <div class="toolGroup"><button class="tool" id="toolText">⌨</button><div class="tool-label">テキスト</div></div>
+    <div class="toolGroup"><button class="tool" id="gearSingle">⚙</button><div class="tool-label">設定</div></div>
+  </aside>
+  <main class="stage" id="stage">
+    <canvas id="canvas"></canvas>
+
+    <!-- 設定パネル -->
+    <div id="flyout" class="flyout hidden">
+      <h3 id="flyoutTitle">設定</h3>
+      <div id="flyoutBody"></div>
+      <div class="row"><button id="flyoutClose">閉じる</button></div>
+    </div>
+
+    <input id="textInput" class="textInput" style="display:none">
+  </main>
+</div>
+
+<!-- 共有ガイド（生徒/教師共通の導線） -->
+<div id="shareModal" class="modal">
+  <div class="card">
+    <h3>共有ガイド</h3>
+    <div class="sep"></div>
+    <div class="row"><b>1) 保存</b>「保存(JSON)」で <code>note-link.json</code> を保存</div>
+    <div class="row"><b>2) 共有</b> Google ドライブにアップロード → 共有リンクを作成</div>
+    <div class="row"><b>3) 提出</b> 先生へ共有リンクを送信（メール/LINE/フォーム）</div>
+    <div class="sep"></div>
+    <div class="row hint">※ 教師モードでは、受け取ったJSONを「読込」で開き、書込み不可のままレビューできます。</div>
+    <div class="row" style="justify-content:flex-end; gap:8px;">
+      <button id="btnCopySteps">手順をコピー</button>
+      <button id="btnCloseShare">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- テンプレ（最小） -->
+<template id="tmpl-pen"><div class="row">
+  <label>色</label><input type="color" id="penColor" value="#fffae6">
+  <label>太さ</label><input type="range" id="penSize" min="1" max="30" value="3"><span id="penSizeVal">3</span>
+  <label>不透明度</label><input type="range" id="penAlpha" min="0.05" max="1" step="0.05" value="1"><span id="penAlphaVal">1</span>
+</div></template>
+
+<template id="tmpl-hl"><div class="row">
+  <label>色</label><input type="color" id="hlColor" value="#ffff66">
+  <label>太さ</label><input type="range" id="hlSize" min="4" max="60" value="16"><span id="hlSizeVal">16</span>
+  <span class="hint">蛍光は自動で半透明（0.35）</span>
+</div></template>
+
+<template id="tmpl-eraser"><div class="row">
+  <label>消し範囲</label><input type="range" id="eraserRadius" min="8" max="48" value="16"><span id="eraserRadiusVal">16</span>
+</div></template>
+
+<script>
+/* ===== PWA登録 ===== */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(console.warn);
+  });
+}
+
+/* ===== 状態 ===== */
+const state = {
+  pages: [{strokes:[], texts:[]}], pageIndex:0,
+  tool: "pen",
+  pen: { color:"#fffae6", size:3, alpha:1 },
+  hl: { color:"#ffff66", size:16, alpha:.35 },
+  eraser: { radius:16 },
+  view: { x:0, y:0, scale:1 },
+  drawing:false, stroke:null,
+  mode:"student" // "teacher"=読み取り専用
+};
+
+/* ===== 要素 ===== */
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const stage = document.getElementById("stage");
+const dpr = Math.max(1, window.devicePixelRatio||1);
+const sidebar = document.getElementById("sidebar");
+const toggleBar = document.getElementById("toggleBar");
+const gearSingle = document.getElementById("gearSingle");
+const flyout = document.getElementById("flyout");
+const flyoutBody = document.getElementById("flyoutBody");
+const flyoutTitle = document.getElementById("flyoutTitle");
+const flyoutClose = document.getElementById("flyoutClose");
+const textInput = document.getElementById("textInput");
+const modeBadge = document.getElementById("modeBadge");
+
+/* ===== レイアウト ===== */
+function resizeCanvas(){
+  const r = stage.getBoundingClientRect();
+  canvas.width = Math.floor(r.width * dpr);
+  canvas.height = Math.floor(r.height * dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  render();
+}
+window.addEventListener("resize", resizeCanvas);
+toggleBar.addEventListener("click", ()=>{
+  const collapsed = sidebar.classList.toggle("collapsedY");
+  toggleBar.textContent = collapsed ? "▽" : "△";
+  resizeCanvas();
+});
+
+/* ===== ツール ===== */
+const btns = {
+  pen: document.getElementById("toolPen"),
+  hl: document.getElementById("toolHL"),
+  eraser: document.getElementById("toolEraser"),
+  pan: document.getElementById("toolPan"),
+  text: document.getElementById("toolText"),
+};
+Object.entries(btns).forEach(([k, el])=> el.addEventListener("click", ()=>{
+  closeFlyout();
+  state.tool = k;
+  Object.values(btns).forEach(b=>b.classList.remove("active"));
+  el.classList.add("active");
+}));
+gearSingle.addEventListener("click", ()=>{
+  openFlyout(state.tool);
+});
+function openFlyout(kind){
+  flyout.classList.remove("hidden");
+  flyoutTitle.textContent = {pen:"ペン設定", hl:"蛍光ペン設定", eraser:"消しゴム設定"}[kind] || "設定";
+  const map = { pen:"tmpl-pen", hl:"tmpl-hl", eraser:"tmpl-eraser" };
+  const tmpl = document.getElementById(map[kind]);
+  flyoutBody.innerHTML = "";
+  if (tmpl) flyoutBody.appendChild(tmpl.content.cloneNode(true));
+  bindControls(kind);
+}
+function closeFlyout(){ flyout.classList.add("hidden"); }
+flyoutClose.addEventListener("click", closeFlyout);
+
+function bindControls(kind){
+  if(kind==="pen"){
+    const c = flyoutBody.querySelector("#penColor");
+    const s = flyoutBody.querySelector("#penSize");
+    const sv= flyoutBody.querySelector("#penSizeVal");
+    const a = flyoutBody.querySelector("#penAlpha");
+    const av= flyoutBody.querySelector("#penAlphaVal");
+    c.value = state.pen.color; s.value = state.pen.size; sv.textContent = s.value; a.value = state.pen.alpha; av.textContent = a.value;
+    c.oninput = ()=> state.pen.color = c.value;
+    s.oninput = ()=>{ state.pen.size = +s.value; sv.textContent = s.value; };
+    a.oninput = ()=>{ state.pen.alpha = +a.value; av.textContent = a.value; };
+  }
+  if(kind==="hl"){
+    const c = flyoutBody.querySelector("#hlColor");
+    const s = flyoutBody.querySelector("#hlSize");
+    const sv= flyoutBody.querySelector("#hlSizeVal");
+    c.value = state.hl.color; s.value = state.hl.size; sv.textContent = s.value;
+    c.oninput = ()=> state.hl.color = c.value;
+    s.oninput = ()=>{ state.hl.size = +s.value; sv.textContent = s.value; };
+  }
+  if(kind==="eraser"){
+    const r = flyoutBody.querySelector("#eraserRadius");
+    const rv= flyoutBody.querySelector("#eraserRadiusVal");
+    r.value = state.eraser.radius; rv.textContent = r.value;
+    r.oninput = ()=>{ state.eraser.radius = +r.value; rv.textContent = r.value; };
+  }
+}
+
+/* ===== 保存/読込/出力/共有 ===== */
+document.getElementById("btnSave").addEventListener("click", ()=>{
+  const data = JSON.stringify({ pages: state.pages }, null, 2);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([data], {type:"application/json"}));
+  a.download = "note-link.json";
+  a.click();
+});
+const fileLoad = document.getElementById("fileLoad");
+document.getElementById("btnLoad").addEventListener("click", ()=> fileLoad.click());
+fileLoad.addEventListener("change", (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  const fr = new FileReader();
+  fr.onload = ()=>{
+    try{
+      const j = JSON.parse(fr.result);
+      if(Array.isArray(j.pages)){ state.pages = j.pages; state.pageIndex = 0; render(); }
+    }catch(err){ alert("JSONの形式が不正です"); }
+  };
+  fr.readAsText(f); e.target.value = "";
+});
+document.getElementById("btnExport").addEventListener("click", ()=>{
+  const a = document.createElement("a");
+  a.href = canvas.toDataURL("image/png");
+  a.download = "note-page.png";
+  a.click();
+});
+const shareModal = document.getElementById("shareModal");
+document.getElementById("btnShare").addEventListener("click", ()=> shareModal.classList.add("open"));
+document.getElementById("btnCloseShare").addEventListener("click", ()=> shareModal.classList.remove("open"));
+document.getElementById("btnCopySteps").addEventListener("click", async ()=>{
+  const txt = [
+    "【Note Link 共有手順】",
+    "1) 保存(JSON)で note-link.json を保存",
+    "2) Googleドライブにアップして共有リンクを作成",
+    "3) 先生へリンク提出（メール/LINE/フォーム）"
+  ].join("\n");
+  try{ await navigator.clipboard.writeText(txt); alert("コピーしました"); }catch{ alert("コピーできませんでした"); }
+});
+
+/* ===== 教師モード（読み取り専用） ===== */
+const btnToggleMode = document.getElementById("btnToggleMode");
+btnToggleMode.addEventListener("click", ()=>{
+  state.mode = (state.mode === "student") ? "teacher" : "student";
+  modeBadge.textContent = (state.mode === "teacher") ? "教師モード(閲覧専用)" : "生徒モード";
+  btnToggleMode.textContent = (state.mode === "teacher") ? "生徒モード" : "教師モード";
+});
+
+/* ===== 入力（描画/移動/テキスト） ===== */
+function page(){ return state.pages[state.pageIndex]; }
+function toCanvas(clientX, clientY){
+  const r = canvas.getBoundingClientRect();
+  return { x:(clientX - r.left - state.view.x)/state.view.scale, y:(clientY - r.top - state.view.y)/state.view.scale };
+}
+canvas.addEventListener("pointerdown", (e)=>{
+  if(state.mode === "teacher") return; // 教師モードは編集不可
+  if(state.tool === "text"){
+    const p = toCanvas(e.clientX, e.clientY);
+    textInput.style.left = (e.clientX - 6)+"px";
+    textInput.style.top  = (e.clientY - 10)+"px";
+    textInput.style.display = "block";
+    textInput.value = ""; textInput.focus();
+    const confirm = ()=>{
+      const v = textInput.value.trim();
+      textInput.style.display = "none";
+      textInput.onblur = textInput.onkeydown = null;
+      if(v){ page().texts.push({text:v, x:p.x, y:p.y, color:"#ffffff", size:18}); render(); }
+    };
+    textInput.onkeydown = (ev)=>{ if(ev.key==="Enter"){ ev.preventDefault(); confirm(); } if(ev.key==="Escape"){ ev.preventDefault(); textInput.style.display="none"; } };
+    textInput.onblur = confirm;
+    return;
+  }
+  state.drawing = true;
+  const p = toCanvas(e.clientX, e.clientY);
+  if(state.tool === "pen"){
+    state.stroke = { tool:"pen", color:state.pen.color, size:state.pen.size, alpha:state.pen.alpha, points:[p] };
+  }else if(state.tool === "hl"){
+    state.stroke = { tool:"hl", color:state.hl.color, size:state.hl.size, alpha:state.hl.alpha, points:[p] };
+  }else if(state.tool === "eraser"){
+    eraseAt(p.x, p.y, state.eraser.radius);
+  }else if(state.tool === "pan"){
+    state.panPrev = {x:e.clientX, y:e.clientY};
+  }
+  canvas.setPointerCapture(e.pointerId);
+  render();
+});
+canvas.addEventListener("pointermove",(e)=>{
+  if(!state.drawing) return;
+  const p = toCanvas(e.clientX, e.clientY);
+  if(state.tool==="pen"||state.tool==="hl"){ state.stroke.points.push(p); }
+  else if(state.tool==="eraser"){ eraseAt(p.x,p.y,state.eraser.radius); }
+  else if(state.tool==="pan"){ const dx=e.clientX-state.panPrev.x, dy=e.clientY-state.panPrev.y; state.view.x+=dx; state.view.y+=dy; state.panPrev={x:e.clientX,y:e.clientY}; }
+  render();
+});
+function finish(){
+  if(state.stroke){ page().strokes.push(state.stroke); state.stroke=null; }
+  state.drawing=false; render();
+}
+canvas.addEventListener("pointerup", finish);
+canvas.addEventListener("pointercancel", finish);
+
+function eraseAt(x,y,r){
+  const rr = r*r;
+  const pg = page();
+  pg.strokes = pg.strokes.filter(s=> !s.points.some(pt=>{ const dx=pt.x-x, dy=pt.y-y; return dx*dx+dy*dy<=rr; }) );
+}
+
+/* ===== Undo/Redo（超簡易） ===== */
+const undoStack=[]; const redoStack=[];
+function snapshot(){ undoStack.push(JSON.stringify(state.pages)); redoStack.length=0; }
+document.getElementById("btnUndo").addEventListener("click", ()=>{
+  const cur = JSON.stringify(state.pages);
+  const prev = undoStack.pop(); if(!prev) return;
+  redoStack.push(cur); state.pages = JSON.parse(prev); render();
+});
+document.getElementById("btnRedo").addEventListener("click", ()=>{
+  const cur = JSON.stringify(state.pages);
+  const next = redoStack.pop(); if(!next) return;
+  undoStack.push(cur); state.pages = JSON.parse(next); render();
+});
+
+/* ===== 描画 ===== */
+function render(){
+  const r = canvas.getBoundingClientRect(), w=r.width, h=r.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.save();
+  ctx.translate(state.view.x, state.view.y);
+  ctx.scale(state.view.scale, state.view.scale);
+
+  const pg = page();
+  // strokes
+  ctx.lineCap = "round"; ctx.lineJoin="round";
+  for(const s of pg.strokes){
+    ctx.globalAlpha = s.alpha; ctx.strokeStyle = s.color; ctx.lineWidth = s.size;
+    ctx.beginPath(); ctx.moveTo(s.points[0].x, s.points[0].y);
+    for(let i=1;i<s.points.length;i++){ const p=s.points[i]; ctx.lineTo(p.x,p.y); }
+    ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  if(state.stroke){
+    const s = state.stroke; ctx.globalAlpha=s.alpha; ctx.strokeStyle=s.color; ctx.lineWidth=s.size;
+    ctx.beginPath(); ctx.moveTo(s.points[0].x, s.points[0].y);
+    for(let i=1;i<s.points.length;i++){ const p=s.points[i]; ctx.lineTo(p.x,p.y); }
+    ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  // texts
+  for(const t of pg.texts){
+    ctx.font = `${t.size||18}px 'Noto Sans JP',sans-serif`;
+    ctx.fillStyle = t.color||"#fff"; ctx.textBaseline="top";
+    ctx.fillText(t.text, t.x, t.y);
+  }
+
+  ctx.restore();
+}
+
+function init(){
+  resizeCanvas();
+  // 初回スナップショット
+  snapshot();
+}
+window.addEventListener("load", init);
+</script>
+</body>
+</html>
