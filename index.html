@@ -1,500 +1,379 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Note Link v0.6.8 / No.12 (single)</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Note Link v0.6.8 / No.12</title>
 <style>
 :root{
-  --bg:#0f172a;
-  --panel:#0b1220;
-  --ink:#e5e7eb;
-  --muted:#3b4456;
-  --accent:#69e39b;       /* アクティブ枠＋グロー */
-  --accent-soft: rgba(105,227,155,.25);
-  --danger:#ef4444;
+  --bg:#0f172a;        /* 背景 */
+  --panel:#111827;     /* パネル */
+  --ink:#e5e7eb;       /* 文字色 */
+  --muted:#334155;     /* 境界線 */
+  --accent:#4ade80;    /* アクティブ（緑） */
 }
-*{box-sizing:border-box}
-html,body{height:100%}
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
 body{
-  margin:0; color:var(--ink); background:var(--bg); font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif; overflow:hidden;
+  margin:0; color:var(--ink); background:var(--bg);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+  overflow:hidden;
 }
 
-/* ───── ヘッダー（上部メニュー：位置ズレ修正） ───── */
-.header{
-  height:48px; display:flex; align-items:center; gap:8px; padding:0 10px;
-  background:var(--panel); border-bottom:1px solid var(--muted);
+/* ヘッダー（縦ズレ防止：行高&中央揃え） */
+header{
+  height:46px; display:flex; align-items:center; gap:8px;
+  padding:0 10px; background:var(--panel); border-bottom:1px solid var(--muted);
 }
-.brand{display:flex; align-items:center; gap:8px; font-weight:700}
-.brand .dot{width:10px; height:10px; background:var(--accent); border-radius:50%; box-shadow:0 0 10px var(--accent)}
-.ver{font-size:12px; padding:2px 8px; border:1px solid var(--muted); border-radius:10px; opacity:.85}
-.header .spacer{flex:1}
-.hbtn{
-  height:30px; padding:0 10px; display:inline-grid; place-items:center; border:1px solid var(--muted); border-radius:9px;
-  background:var(--panel); color:var(--ink); line-height:1; vertical-align:middle;
+.brand{ display:flex; align-items:center; gap:8px; font-weight:700; }
+.vchip{ font-size:12px; padding:2px 8px; border:1px solid var(--muted); border-radius:999px; opacity:.9; }
+.h-actions{ margin-left:auto; display:flex; align-items:center; gap:6px; }
+.h-actions .btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  height:28px; padding:0 10px; border:1px solid var(--muted); border-radius:10px;
+  background:#0b1220; color:var(--ink); line-height:1;
 }
-.hbtn:active{transform:translateY(1px)}
-.hbtn:hover{border-color:var(--accent)}
-.pager{display:flex; gap:6px; align-items:center}
-.pager .count{min-width:44px; text-align:center; font-variant-numeric:tabular-nums}
-.icon-16{width:16px; height:16px; display:block}
+.h-actions .btn:active{ transform:translateY(1px); }
+.h-actions .btn:focus{ outline:2px solid var(--accent); outline-offset:1px; }
 
-/* ───── レイアウト ───── */
-.wrap{display:grid; grid-template-columns: 56px 1fr; height: calc(100% - 48px);}
-.wrap.collapsed{grid-template-columns: 22px 1fr;} /* 折り畳み時でもきちんと閉まり、キャンバスを邪魔しない */
+/* 2カラムレイアウト（折りたたみ時もキャンバス領域を侵食しない） */
+.main{
+  height:calc(100% - 46px);
+  display:grid; grid-template-columns: var(--sbw,64px) 1fr;
+}
 
+/* サイドバー */
 .sidebar{
-  background:var(--panel); border-right:1px solid var(--muted);
-  padding:8px 6px; display:flex; flex-direction:column; gap:8px; overflow:auto; position:relative;
+  position:relative; background:#0b1220; border-right:1px solid var(--muted);
+  padding:8px 6px; display:flex; flex-direction:column; gap:8px;
 }
-
-/* トグル（△▽）: 位置固定 & ツールと重ならない */
-.toggle{
-  position:sticky; top:8px; align-self:flex-start;
-  width:40px; height:40px; border-radius:12px; border:1px solid var(--muted); display:grid; place-items:center; background:var(--panel);
+.sb-toggle{
+  position:absolute; left:6px; top:6px; width:36px; height:36px;
+  display:grid; place-items:center; border-radius:12px;
+  border:1px solid var(--muted); background:#0b1220; cursor:pointer;
 }
-.wrap.collapsed .toggle{ width:20px; height:20px; border-radius:6px; }
-
-/* ツールアイコン（単色・自作SVG） */
+.sb-toggle svg{ width:18px; height:18px; }
+.tools{ margin-top:52px; display:flex; flex-direction:column; gap:8px; }
 .tool{
-  width:40px; height:40px; border-radius:12px; border:1px solid var(--muted);
-  display:grid; place-items:center; background:var(--panel); cursor:pointer;
-  transition:border-color .15s, box-shadow .15s;
-  filter:grayscale(1); /* 全アイコン白黒化（つかむも含む） */
+  width:44px; height:44px; display:grid; place-items:center;
+  border:1px solid var(--muted); border-radius:12px; background:#0b1220; cursor:pointer;
 }
-.tool svg{width:22px; height:22px}
-.wrap.collapsed .tool{ width:20px; height:20px; border-radius:6px; }
+.tool svg{ width:22px; height:22px; }
 .tool.active{
   border-color:var(--accent);
-  box-shadow:0 0 0 2px var(--accent-soft); /* 要望：太めの緑グロー（前回の見た目に復帰） */
-  filter:none;
+  box-shadow:0 0 0 2px rgba(74,222,128,.9), 0 0 12px rgba(74,222,128,.65) inset;
 }
-.tool:focus{outline:none}
+.tool.settings.active{ /* 設定は細線アクティブ */
+  box-shadow:0 0 0 1px rgba(74,222,128,.9), 0 0 8px rgba(74,222,128,.45) inset;
+}
 
-/* 設定（ギア）もアクティブ線を表現 */
-.tool.gear-open{ border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft); }
+/* 折りたたみ（幅を狭く・アイコンは残す） */
+body.sb-collapsed{ --sbw: 20px; }
+body.sb-collapsed .sb-toggle{ left:2px; }
+body.sb-collapsed .tools{ margin-left:-56px; } /* 画面端に揃えて見失わない */
+body.sb-collapsed .tool{ width:44px; }         /* キャンバス側に被らない */
 
 /* ステージ */
-.stage{position:relative; background:#0b1220}
-canvas{display:block; width:100%; height:100%; background:transparent}
+.stage{ position:relative; background:#0b1220; }
+canvas{ display:block; width:100%; height:100%; }
 
-/* 設定パネル（ツール切り替えで自動クローズ対応） */
+/* 設定フローティング */
 .panel{
-  position:absolute; top:72px; left:72px; width:320px; max-width:90vw; background:rgba(17,24,39,.98);
-  border:1px solid var(--muted); border-radius:14px; box-shadow:0 10px 32px rgba(0,0,0,.45); padding:10px; backdrop-filter: blur(6px);
+  position:absolute; top:76px; left:76px; min-width:300px;
+  background:rgba(17,24,39,.98); border:1px solid var(--muted);
+  border-radius:14px; padding:10px; box-shadow:0 10px 28px rgba(0,0,0,.4);
 }
-.panel.hidden{display:none}
-.panel .tabs{display:flex; gap:6px; margin-bottom:8px}
-.panel .tabs button{
-  height:28px; padding:0 8px; border-radius:8px; border:1px solid var(--muted); background:var(--panel); color:var(--ink)
+.panel.hidden{ display:none; }
+.panel .ph{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.tabs{ display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap; }
+.tabs button{
+  height:28px; padding:0 10px; border-radius:8px; border:1px solid var(--muted); background:#0b1220; color:var(--ink);
 }
-.panel .tabs button.active{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft)}
-.row{display:flex; align-items:center; gap:8px; margin:8px 0}
-.row label{min-width:80px; opacity:.9}
-input[type="range"]{flex:1}
-.panel .closeX{margin-left:auto}
+.tabs button.active{ border-color:var(--accent); background:#0e1b2a; }
+.row{ display:flex; align-items:center; gap:8px; margin:8px 0; }
+.row input[type="range"]{ width:170px; }
+.row input[type="color"]{ width:36px; height:24px; padding:0; border:1px solid var(--muted); border-radius:6px; background:#fff; }
+.small{ font-size:12px; opacity:.8; }
 
-/* トースト（共有のコピーなど） */
-.toast{
-  position:absolute; right:12px; bottom:12px; background:#111827; border:1px solid var(--muted); border-radius:10px; padding:8px 12px; opacity:0; transition:opacity .2s
-}
-.toast.show{opacity:1}
+/* 上部ページャは必要最小 */
+.pager{ display:inline-flex; align-items:center; gap:4px; margin-left:8px; }
+.pager .btn{ height:28px; padding:0 8px; }
+.counter{ min-width:38px; text-align:center; font-variant-numeric:tabular-nums; }
 </style>
 </head>
 <body>
-  <div class="header">
-    <div class="brand"><span class="dot"></span> Note Link <span class="ver">v0.6.8 / No.12</span></div>
-    <div class="spacer"></div>
+  <header>
+    <div class="brand">Note Link <span class="vchip">v0.6.8 / No.12</span></div>
     <div class="pager">
-      <button id="btnPrev" class="hbtn" title="前へ"><svg class="icon-16" viewBox="0 0 24 24"><path fill="currentColor" d="M15 18L9 12l6-6"/></svg></button>
-      <span id="pageCount" class="count">1/1</span>
-      <button id="btnNext" class="hbtn" title="次へ"><svg class="icon-16" viewBox="0 0 24 24"><path fill="currentColor" d="M9 6l6 6-6 6"/></svg></button>
-      <button id="btnAdd" class="hbtn" title="ページ追加 +">＋</button>
-      <button id="btnDel" class="hbtn" title="ページ削除 −">−</button>
+      <button class="btn" id="prevPg">◀</button>
+      <span class="counter" id="pgCounter">1/1</span>
+      <button class="btn" id="nextPg">▶</button>
+      <button class="btn" id="zoomIn">＋</button>
+      <button class="btn" id="zoomOut">－</button>
     </div>
-    <button id="btnPrint" class="hbtn">印刷</button>
-    <button id="btnPng" class="hbtn">PNG</button>
-    <button id="btnShare" class="hbtn">共有</button>
-  </div>
+    <div class="h-actions">
+      <button class="btn" id="btnPrint">印刷</button>
+      <button class="btn" id="btnPng">PNG</button>
+      <button class="btn" id="btnShare">共有</button>
+    </div>
+  </header>
 
-  <div id="wrap" class="wrap">
-    <!-- 左ツールバー -->
-    <aside id="sidebar" class="sidebar">
-      <button id="btnToggle" class="toggle" title="開閉"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 7l6 6H6z"/></svg></button>
-
-      <!-- ペン -->
-      <button data-tool="pen" class="tool active" title="ペン">
-        <!-- 自作SVG：直線と先端 -->
-        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 20l4-1 9-9-3-3-9 9-1 4zM13 7l3 3"/></svg>
+  <div class="main">
+    <aside class="sidebar">
+      <button class="sb-toggle" id="sbToggle" title="ツールバーを畳む/戻す">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
       </button>
-
-      <!-- 蛍光ペン -->
-      <button data-tool="hl" class="tool" title="蛍光ペン">
-        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 16l5 5 3-3 7-7-5-5-7 7-3 3zM4 20h6"/></svg>
-      </button>
-
-      <!-- 消しゴム -->
-      <button data-tool="eraser" class="tool" title="消しゴム">
-        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 15l6 6h5l7-7-8-8-10 10zm6 6l-3-3"/></svg>
-      </button>
-
-      <!-- つかむ（移動） -->
-      <button data-tool="pan" class="tool" title="移動">
-        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M5 12a2 2 0 014 0v3h1V6a2 2 0 014 0v9h1V8a2 2 0 014 0v9a4 4 0 01-4 4H11a4 4 0 01-4-4v-5z"/></svg>
-      </button>
-
-      <!-- 方眼/ガイド -->
-      <button data-tool="guide" class="tool" title="ガイド">
-        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h16v16H4zM8 4v16M16 4v16M4 8h16M4 16h16" /></svg>
-      </button>
-
-      <!-- テキスト（簡易） -->
-      <button data-tool="text" class="tool" title="テキスト">
-        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M5 6V4h14v2h-6v14h-2V6H5z"/></svg>
-      </button>
-
-      <!-- 設定（ギア） -->
-      <button id="btnGear" class="tool" title="設定">
-        <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 15a3 3 0 110-6 3 3 0 010 6zm7-3l2-1-1-3-2 .5a7 7 0 00-1.6-1l.3-2.1-3-1-1 2a7 7 0 00-2 0l-1-2-3 1 .3 2.1a7 7 0 00-1.6 1L4 8l-1 3 2 1a7 7 0 000 2l-2 1 1 3 2-.5a7 7 0 001.6 1L7.9 21l3 1 1-2a7 7 0 002 0l1 2 3-1-.3-2.1a7 7 0 001.6-1L20 16l1-3-2-1z"/></svg>
-      </button>
+      <div class="tools" id="tools">
+        <button class="tool active" data-tool="pen" title="ペン">
+          <!-- pen -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l-7 2 2-7L16 5a2.8 2.8 0 114 4L11 18z"/><path d="M16 5l3 3"/></svg>
+        </button>
+        <button class="tool" data-tool="hl" title="蛍光ペン">
+          <!-- highlighter -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h8"/><path d="M3 17l9-9 4 4-9 9H3z"/></svg>
+        </button>
+        <button class="tool" data-tool="eraser" title="消しゴム">
+          <!-- eraser -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 16l7-7 8 8-3 3H8z"/><path d="M14 6l4 4"/></svg>
+        </button>
+        <button class="tool" data-tool="pan" title="移動">
+          <!-- hand -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 11V6a2 2 0 114 0v5"/><path d="M12 11V5a2 2 0 114 0v6"/><path d="M4 12v1a7 7 0 007 7h1a7 7 0 007-7v-2"/></svg>
+        </button>
+        <button class="tool" data-tool="text" title="テキスト">
+          <!-- T -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M10 6v12m4-12v12"/></svg>
+        </button>
+        <button class="tool settings" data-tool="settings" title="設定">
+          <!-- gear -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06A2 2 0 015.04 3.3l.06.06a1.65 1.65 0 001.82.33H7a1.65 1.65 0 001-1.51V2a2 2 0 014 0v.09c0 .67.39 1.27 1 1.51.58.24 1.24.12 1.68-.33l.06-.06a2 2 0 012.83 2.83l-.06.06c-.45.44-.57 1.1-.33 1.68.24.61.84 1 1.51 1H21a2 2 0 010 4h-.09c-.67 0-1.27.39-1.51 1z"/></svg>
+        </button>
+      </div>
     </aside>
 
-    <!-- キャンバス -->
     <main class="stage">
-      <canvas id="canvas"></canvas>
+      <canvas id="cv"></canvas>
 
-      <!-- 設定パネル -->
-      <div id="panel" class="panel hidden" role="dialog" aria-label="設定パネル">
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+      <!-- 設定パネル（タブ式）。ツール切替で自動クローズ -->
+      <div class="panel hidden" id="panel">
+        <div class="ph">
           <strong>設定</strong>
-          <button id="btnClosePanel" class="hbtn closeX">✕</button>
+          <button class="btn" id="closePanel">×</button>
         </div>
         <div class="tabs">
-          <button data-tab="pen"  class="tab-btn active">ペン</button>
-          <button data-tab="hl"   class="tab-btn">蛍光ペン</button>
-          <button data-tab="eraser" class="tab-btn">消しゴム</button>
+          <button class="tab active" data-tab="pen">ペン</button>
+          <button class="tab" data-tab="hl">蛍光ペン</button>
+          <button class="tab" data-tab="eraser">消しゴム</button>
         </div>
-
-        <!-- ペン -->
-        <div data-pane="pen">
-          <div class="row"><label>色</label><input id="penColor" type="color" value="#fffae6"></div>
-          <div class="row"><label>太さ</label><input id="penSize" type="range" min="1" max="30" value="3"></div>
-          <div class="row"><label>不透明度</label><input id="penAlpha" type="range" min="0.05" max="1" step="0.05" value="1"></div>
-          <div class="row" style="font-size:12px; opacity:.8">Shiftで直線、15°刻みで角度スナップ（要望取り込み）</div>
-        </div>
-
-        <!-- 蛍光ペン -->
-        <div data-pane="hl" style="display:none">
-          <div class="row"><label>色</label><input id="hlColor" type="color" value="#ffff66"></div>
-          <div class="row"><label>太さ</label><input id="hlSize" type="range" min="4" max="60" value="16"></div>
-        </div>
-
-        <!-- 消しゴム -->
-        <div data-pane="eraser" style="display:none">
-          <div class="row"><label>半径</label><input id="eraserR" type="range" min="8" max="48" value="18"></div>
-          <div class="row"><button id="btnClearPage" class="hbtn" style="border-color:var(--danger); color:var(--danger)">このページを全面消去</button></div>
+        <div id="tabBody">
+          <!-- ペン -->
+          <div data-pane="pen">
+            <div class="row"><span>色</span><input type="color" id="penColor" value="#fffae6"></div>
+            <div class="row"><span>太さ</span><input type="range" id="penSize" min="1" max="30" value="3"><span id="penSizeV">3</span></div>
+            <div class="row"><span>不透明度</span><input type="range" id="penAlpha" min="0.1" max="1" step="0.05" value="1"><span id="penAlphaV">1</span></div>
+            <div class="small">Shift を押しながら描くと直線（角度スナップは次版）。</div>
+          </div>
+          <!-- 蛍光ペン -->
+          <div data-pane="hl" style="display:none">
+            <div class="row"><span>色</span><input type="color" id="hlColor" value="#ffff66"></div>
+            <div class="row"><span>太さ</span><input type="range" id="hlSize" min="6" max="60" value="18"><span id="hlSizeV">18</span></div>
+            <div class="small">不透明度は自動で約0.35に固定します。</div>
+          </div>
+          <!-- 消しゴム -->
+          <div data-pane="eraser" style="display:none">
+            <div class="row"><span>半径</span><input type="range" id="erRadius" min="8" max="64" value="24"><span id="erRadiusV">24</span></div>
+            <div class="row"><button class="btn" id="btnClearAll">全消去</button><span class="small">（ページ全体を消します）</span></div>
+            <div class="small">ドラッグで「部分消去」（円）です。</div>
+          </div>
         </div>
       </div>
-
-      <div id="toast" class="toast">コピーしました</div>
     </main>
   </div>
 
 <script>
-/* ─────────────────────────────────────────────────────────
-   状態
-────────────────────────────────────────────────────────── */
-const state = {
-  tool:'pen',
-  pageIndex:0,
-  pages:[newPage()],
-  bg:'#0b1220',
-  view:{scale:1, x:0, y:0},
-  pen:{color:'#fffae6', size:3, alpha:1},
-  hl:{color:'#ffff66', size:16, alpha:0.4},
-  eraser:{r:18},
-  guide:{type:'none', spacing:28, opacity:.25, marginLeft:40},
-  drawing:false, stroke:null,
-  straight:{enabled:false}, // Shift直線
-};
+/* ===== 基本要素 ===== */
+const body = document.body;
+const canvas = document.getElementById('cv');
+const ctx = canvas.getContext('2d', { alpha:true });
+let dpr = Math.max(1, window.devicePixelRatio || 1);
 
-function newPage(){ return {strokes:[], texts:[], bg:null}; }
-
-/* ─────────────────────────────────────────────────────────
-   要素参照
-────────────────────────────────────────────────────────── */
-const wrap = document.getElementById('wrap');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const dpr = Math.max(1, window.devicePixelRatio||1);
-
-const panel = document.getElementById('panel');
-const btnGear = document.getElementById('btnGear');
-const btnClosePanel = document.getElementById('btnClosePanel');
-
-const pageCount = document.getElementById('pageCount');
-const btnPrev = document.getElementById('btnPrev');
-const btnNext = document.getElementById('btnNext');
-const btnAdd  = document.getElementById('btnAdd');
-const btnDel  = document.getElementById('btnDel');
-
-const btnPrint = document.getElementById('btnPrint');
-const btnPng   = document.getElementById('btnPng');
-const btnShare = document.getElementById('btnShare');
-const toast    = document.getElementById('toast');
-
-function showToast(msg='コピーしました'){ toast.textContent = msg; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),1200); }
-
-/* ─────────────────────────────────────────────────────────
-   レイアウトとツールバー
-────────────────────────────────────────────────────────── */
 function resize(){
   const r = canvas.getBoundingClientRect();
-  canvas.width  = Math.floor(r.width  * dpr);
+  canvas.width  = Math.floor(r.width * dpr);
   canvas.height = Math.floor(r.height * dpr);
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.scale(dpr,dpr);
-  render();
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  redraw();
 }
 window.addEventListener('resize', resize);
-resize();
 
-document.getElementById('btnToggle').onclick = ()=>{
-  wrap.classList.toggle('collapsed');
-  // きちんと閉まってキャンバスに干渉しない（要求対応）
-  resize();
+/* ===== 状態 ===== */
+const state = {
+  tool:'pen',
+  stroke:null,
+  zoom:1,
+  pen:{ color:'#fffae6', size:3, alpha:1 },
+  hl:{ color:'#ffff66', size:18, alpha:0.35 },
+  eraser:{ r:24 },
+  bg:'#0b1220',
+  drawing:false,
+  last:{x:0,y:0},
+  shift:false
 };
 
-[...document.querySelectorAll('.tool[data-tool]')].forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    // アクティブ切り替え（緑グロー）
-    document.querySelectorAll('.tool').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-
-    // ツール変更
-    state.tool = btn.dataset.tool;
-
-    // ツール切替時は設定パネルを自動的に閉じる（要求対応）
-    closePanel();
-
-    // つかむ（pan）でポインタカーソル
-    canvas.style.cursor = (state.tool==='pan')?'grab':'crosshair';
+function setTool(t){
+  state.tool = t;
+  document.querySelectorAll('.tool').forEach(b=>b.classList.toggle('active', b.dataset.tool===t));
+  // 設定パネルはツール切替で自動クローズ（要望）
+  hidePanel();
+}
+document.querySelectorAll('.tool').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    const t = b.dataset.tool;
+    if(t==='settings'){ togglePanel(); return; }
+    setTool(t);
   });
 });
 
-/* 設定（ギア） */
-btnGear.addEventListener('click', ()=>{
-  if(panel.classList.contains('hidden')) openPanel(); else closePanel();
+/* 折りたたみ */
+document.getElementById('sbToggle').addEventListener('click', ()=>{
+  body.classList.toggle('sb-collapsed');
 });
-function openPanel(){
+
+/* 設定パネル（タブ） */
+const panel = document.getElementById('panel');
+function showPanel(tab='pen'){
   panel.classList.remove('hidden');
-  btnGear.classList.add('gear-open');
-  // 現在ツールのタブへ
-  switchPanelTab(state.tool);
+  switchTab(tab);
 }
-function closePanel(){
-  panel.classList.add('hidden');
-  btnGear.classList.remove('gear-open');
-}
+function hidePanel(){ panel.classList.add('hidden'); }
+function togglePanel(){ panel.classList.toggle('hidden'); if(!panel.classList.contains('hidden')) switchTab('pen'); }
+document.getElementById('closePanel').onclick = hidePanel;
 
-/* タブ切替 */
-[...document.querySelectorAll('.tab-btn')].forEach(b=>{
-  b.addEventListener('click', ()=> switchPanelTab(b.dataset.tab));
+document.querySelectorAll('.tabs .tab').forEach(t=>{
+  t.addEventListener('click', ()=> switchTab(t.dataset.tab));
 });
-function switchPanelTab(name){
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
-  document.querySelectorAll('[data-pane]').forEach(p=>p.style.display = (p.dataset.pane===name)?'block':'none');
+function switchTab(id){
+  document.querySelectorAll('.tabs .tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
+  document.querySelectorAll('#tabBody > div').forEach(p=>p.style.display = (p.dataset.pane===id)?'block':'none');
 }
 
-/* パネル内のコントロール */
-document.getElementById('penColor').oninput = (e)=> state.pen.color = e.target.value;
-document.getElementById('penSize').oninput  = (e)=> state.pen.size  = +e.target.value;
-document.getElementById('penAlpha').oninput = (e)=> state.pen.alpha = +e.target.value;
+/* 設定 → 値バインド */
+const $ = s=>document.querySelector(s);
+$('#penColor').oninput = e=> state.pen.color = e.target.value;
+$('#penSize').oninput  = e=>{ state.pen.size = +e.target.value; $('#penSizeV').textContent=e.target.value; };
+$('#penAlpha').oninput = e=>{ state.pen.alpha= +e.target.value; $('#penAlphaV').textContent=e.target.value; };
 
-document.getElementById('hlColor').oninput  = (e)=> state.hl.color  = e.target.value;
-document.getElementById('hlSize').oninput   = (e)=> state.hl.size   = +e.target.value;
+$('#hlColor').oninput = e=> state.hl.color = e.target.value;
+$('#hlSize').oninput  = e=>{ state.hl.size = +e.target.value; $('#hlSizeV').textContent=e.target.value; };
 
-document.getElementById('eraserR').oninput  = (e)=> state.eraser.r  = +e.target.value;
-document.getElementById('btnClearPage').onclick = ()=>{
-  const p = state.pages[state.pageIndex];
-  p.strokes = [];
-  render();
-}
+$('#erRadius').oninput = e=>{ state.eraser.r = +e.target.value; $('#erRadiusV').textContent=e.target.value; };
+$('#btnClearAll').onclick = ()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); redraw(); };
 
-btnClosePanel.onclick = closePanel;
-
-/* ─────────────────────────────────────────────────────────
-   ページング
-────────────────────────────────────────────────────────── */
-function updatePageLabel(){ pageCount.textContent = `${state.pageIndex+1}/${state.pages.length}`; }
-updatePageLabel();
-
-btnPrev.onclick = ()=>{ if(state.pageIndex>0){ state.pageIndex--; render(); updatePageLabel(); } };
-btnNext.onclick = ()=>{ if(state.pageIndex<state.pages.length-1){ state.pageIndex++; render(); updatePageLabel(); } };
-btnAdd.onclick  = ()=>{ state.pages.splice(state.pageIndex+1,0,newPage()); state.pageIndex++; render(); updatePageLabel(); };
-btnDel.onclick  = ()=>{ if(state.pages.length===1) return; state.pages.splice(state.pageIndex,1); state.pageIndex=Math.max(0,state.pageIndex-1); render(); updatePageLabel(); };
-
-/* ─────────────────────────────────────────────────────────
-   入力（描画）: Shift直線 + 15°スナップ
-────────────────────────────────────────────────────────── */
-function toCanvas(x,y){
+/* ===== 描画系 ===== */
+function redraw(){
+  // 背景（PNG出力でも背景込みになるよう常に塗る）
   const r = canvas.getBoundingClientRect();
-  return {x:(x - r.left - state.view.x)/state.view.scale, y:(y - r.top - state.view.y)/state.view.scale};
+  ctx.save();
+  ctx.globalCompositeOperation='source-over';
+  ctx.fillStyle = state.bg;
+  ctx.fillRect(0,0,r.width,r.height);
+  ctx.restore();
+  // ここに将来：ガイドや背景画像の描画を入れる
 }
-const SNAP_RAD = Math.PI/12; // 15°
-function snapLine(p0,p1){
-  const dx = p1.x - p0.x, dy = p1.y - p0.y;
-  const len = Math.hypot(dx,dy) || 0.0001;
-  let theta = Math.atan2(dy,dx);
-  theta = Math.round(theta / SNAP_RAD) * SNAP_RAD; // 15°刻み
-  return {x: p0.x + Math.cos(theta)*len, y: p0.y + Math.sin(theta)*len};
+
+resize();
+
+/* 直線スナップ（次版詳細）。今回は Shift で完全水平/垂直だけ */
+window.addEventListener('keydown', e=>{ if(e.key==='Shift') state.shift=true; });
+window.addEventListener('keyup',   e=>{ if(e.key==='Shift') state.shift=false; });
+
+function toCanvas(e){
+  const rect = canvas.getBoundingClientRect();
+  return { x:(e.clientX - rect.left), y:(e.clientY - rect.top) };
 }
 
 canvas.addEventListener('pointerdown', (e)=>{
-  if(state.tool==='pan'){ canvas.setPointerCapture(e.pointerId); canvas.style.cursor='grabbing'; state.panStart = {x:e.clientX, y:e.clientY, vx:state.view.x, vy:state.view.y}; return; }
-  if(state.tool==='text') return; // 簡易化：テキストは次版
-  const p = toCanvas(e.clientX, e.clientY);
+  // タブレット：setPointerCapture しないと「点だけ」になる機種がある
+  canvas.setPointerCapture(e.pointerId);
+  const p = toCanvas(e);
   state.drawing = true;
-  const base = (state.tool==='hl')? {tool:'hl',color:state.hl.color, size:state.hl.size, alpha:0.35}
-                                  : (state.tool==='eraser')? {tool:'eraser', r:state.eraser.r}
-                                  : {tool:'pen', color:state.pen.color, size:state.pen.size, alpha:state.pen.alpha};
-  state.stroke = {...base, points:[p]};
-  state.straight.enabled = e.shiftKey && (state.tool==='pen' || state.tool==='hl');
+  state.last = p;
+
+  if(state.tool==='pen' || state.tool==='hl'){
+    ctx.save();
+    ctx.globalCompositeOperation='source-over';
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    const S = (state.tool==='pen')? state.pen.size : state.hl.size;
+    const A = (state.tool==='pen')? state.pen.alpha: state.hl.alpha;
+    ctx.lineWidth = S;
+    ctx.globalAlpha= A;
+    ctx.strokeStyle = (state.tool==='pen')? state.pen.color : state.hl.color;
+    ctx.beginPath(); ctx.moveTo(p.x, p.y);
+  }else if(state.tool==='eraser'){
+    ctx.save();
+    ctx.globalCompositeOperation='destination-out';
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.lineWidth = state.eraser.r*2;
+    ctx.beginPath(); ctx.moveTo(p.x, p.y);
+  }else if(state.tool==='pan'){
+    // いまは未実装（次版）。誤作動防止で描かない
+  }
 });
 
 canvas.addEventListener('pointermove', (e)=>{
-  if(state.tool==='pan' && state.panStart){
-    const dx = e.clientX - state.panStart.x;
-    const dy = e.clientY - state.panStart.y;
-    state.view.x = state.panStart.vx + dx;
-    state.view.y = state.panStart.vy + dy;
-    render();
-    return;
-  }
   if(!state.drawing) return;
-  const p = toCanvas(e.clientX, e.clientY);
-
-  if(state.tool==='eraser'){
-    // 円範囲で部分消去
-    const page = state.pages[state.pageIndex];
-    const r = state.eraser.r;
-    page.strokes = page.strokes.filter(s=>{
-      return !s.points.some(pt => (pt.x-p.x)**2 + (pt.y-p.y)**2 <= r*r);
-    });
-    render();
-    return;
+  const p = toCanvas(e);
+  let x = p.x, y = p.y;
+  if(state.shift){
+    // 水平/垂直スナップ（簡易）
+    const dx = Math.abs(p.x - state.last.x), dy = Math.abs(p.y - state.last.y);
+    if(dx > dy){ y = state.last.y; } else { x = state.last.x; }
   }
-
-  if(state.straight.enabled || e.shiftKey){
-    // 直線 + 角度スナップ
-    const p0 = state.stroke.points[0];
-    state.stroke.points = [p0, snapLine(p0,p)];
-  }else{
-    state.stroke.points.push(p);
-  }
-  render();
+  ctx.lineTo(x,y);
+  ctx.stroke();
+  state.last = {x,y};
 });
 
-canvas.addEventListener('pointerup', (e)=>{
-  if(state.tool==='pan' && state.panStart){
-    state.panStart = null; canvas.style.cursor='grab'; return;
-  }
+function endStroke(){
   if(!state.drawing) return;
   state.drawing = false;
-  const page = state.pages[state.pageIndex];
-  if(state.stroke.tool==='eraser'){ state.stroke=null; return; }
-  if(state.stroke.points.length>=2) page.strokes.push(state.stroke);
-  state.stroke = null;
-  render();
-});
-canvas.addEventListener('pointerleave', ()=>{ state.drawing=false; state.panStart=null; canvas.style.cursor=(state.tool==='pan'?'grab':'crosshair'); });
-
-/* ─────────────────────────────────────────────────────────
-   描画
-────────────────────────────────────────────────────────── */
-function drawStroke(c,s){
-  if(s.tool==='eraser') return;
-  c.save();
-  c.globalAlpha = (s.tool==='hl')? 0.35 : s.alpha;
-  c.lineJoin='round'; c.lineCap='round'; c.strokeStyle = s.color || '#fff'; c.lineWidth = s.size || 3;
-  c.beginPath();
-  const pts = s.points;
-  c.moveTo(pts[0].x, pts[0].y);
-  for(let i=1;i<pts.length;i++) c.lineTo(pts[i].x, pts[i].y);
-  c.stroke();
-  c.restore();
-}
-function drawGuide(c){
-  const g = state.guide; if(!g || g.type==='none') return;
-  const r = canvas.getBoundingClientRect(), w=r.width, h=r.height;
-  c.save();
-  c.translate(state.view.x, state.view.y);
-  c.scale(state.view.scale, state.view.scale);
-  c.globalAlpha = g.opacity;
-  if(g.type==='grid'){
-    c.strokeStyle = '#475569'; c.lineWidth = 1;
-    for(let x=g.spacing; x<w; x+=g.spacing){ c.beginPath(); c.moveTo(x+.5,0); c.lineTo(x+.5,h); c.stroke(); }
-    for(let y=g.spacing; y<h; y+=g.spacing){ c.beginPath(); c.moveTo(0,y+.5); c.lineTo(w,y+.5); c.stroke(); }
-  }
-  c.restore();
-}
-function render(){
-  const r = canvas.getBoundingClientRect();
-  ctx.clearRect(0,0,r.width,r.height);
-  ctx.save();
-  // 背景色
-  ctx.fillStyle = state.bg; ctx.fillRect(0,0,r.width,r.height);
-  // ビュー
-  ctx.translate(state.view.x, state.view.y);
-  ctx.scale(state.view.scale, state.view.scale);
-
-  // ガイド
-  drawGuide(ctx);
-
-  // ストローク
-  const page = state.pages[state.pageIndex];
-  page.strokes.forEach(s=>drawStroke(ctx,s));
-  if(state.stroke) drawStroke(ctx,state.stroke);
-
+  ctx.closePath();
   ctx.restore();
 }
+canvas.addEventListener('pointerup', endStroke);
+canvas.addEventListener('pointercancel', endStroke);
+canvas.addEventListener('pointerleave', endStroke);
 
-/* ─────────────────────────────────────────────────────────
-   共有 / PNG / 印刷
-────────────────────────────────────────────────────────── */
-btnPrint.onclick = ()=> window.print();
+/* ===== 共有系 ===== */
+document.getElementById('btnPrint').onclick = ()=> window.print();
 
-btnPng.onclick = ()=>{
-  // 背景込みで書き出し
-  const r = canvas.getBoundingClientRect();
-  const ex = document.createElement('canvas');
-  ex.width = r.width * dpr; ex.height = r.height * dpr;
-  const ec = ex.getContext('2d');
-  ec.scale(dpr,dpr);
-  // 背景
-  ec.fillStyle = state.bg; ec.fillRect(0,0,r.width,r.height);
-  // 既存レンダリングを再現
-  const snap = ctx.getImageData(0,0,canvas.width,canvas.height);
-  ec.putImageData(snap,0,0);
-  const url = ex.toDataURL('image/png');
-  const a = document.createElement('a'); a.href=url; a.download='note-page.png'; a.click();
+document.getElementById('btnPng').onclick = async ()=>{
+  // 背景込み → すでに redraw が塗っているので toDataURL でOK
+  // 高解像度で欲しいときは将来scale出力を用意
+  const url = canvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = url; a.download = 'note-page.png'; a.click();
 };
 
-btnShare.onclick = async ()=>{
-  const url = location.href;
+document.getElementById('btnShare').onclick = async ()=>{
   try{
-    if(navigator.share){
-      await navigator.share({title:'Note Link', text:'ノート', url});
+    const blob = await new Promise(res=> canvas.toBlob(res, 'image/png'));
+    if(navigator.canShare && navigator.canShare({ files:[new File([blob],'note.png',{type:'image/png'})] })){
+      await navigator.share({ files:[new File([blob],'note.png',{type:'image/png'})], title:'Note Link', text:'共有します' });
+    }else if(navigator.clipboard && 'write' in navigator.clipboard){
+      await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
+      alert('画像をクリップボードにコピーしました');
     }else{
-      await navigator.clipboard.writeText(url);
-      showToast('URLをコピーしました');
+      const url = URL.createObjectURL(blob);
+      alert('このURLを共有してください\n' + url);
     }
-  }catch(e){ /* キャンセル等は無視 */ }
+  }catch(err){
+    console.error(err);
+    alert('共有に失敗しました');
+  }
 };
 
-/* 初期カーソル */
-canvas.style.cursor='crosshair';
-
+/* ツールバーの「設定」ボタンは押すたびトグル。別ツール選択時は自動クローズ（上で実装） */
 </script>
 </body>
 </html>
