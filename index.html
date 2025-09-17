@@ -100,6 +100,7 @@ canvas{ display:block; width:100%; height:100%; }
 .pager .btn{ height:28px; padding:0 8px; }
 .counter{ min-width:38px; text-align:center; font-variant-numeric:tabular-nums; }
 </style>
+<link rel="stylesheet" href="note-link-ui.css?v=1011">
 </head>
 <body>
   <header>
@@ -375,5 +376,50 @@ document.getElementById('btnShare').onclick = async ()=>{
 
 /* ツールバーの「設定」ボタンは押すたびトグル。別ツール選択時は自動クローズ（上で実装） */
 </script>
+  <script>
+(function(){
+  const wrap = document.getElementById('wrap');
+  const sidebar = document.getElementById('sidebar');
+
+  // 折畳みボタンが無ければ作る
+  let btnCollapse = document.getElementById('btnCollapse');
+  if(!btnCollapse && sidebar){
+    btnCollapse = document.createElement('button');
+    btnCollapse.id = 'btnCollapse'; btnCollapse.className = 'tool'; btnCollapse.title = '開閉';
+    btnCollapse.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
+    sidebar.insertBefore(btnCollapse, sidebar.firstChild);
+  }
+  btnCollapse?.addEventListener('click', ()=> wrap?.classList.toggle('collapsed'));
+
+  // ツールのアクティブ強調 & 設定パネル自動クローズ
+  const ids = ['toolPen','toolHighlighter','toolEraser','toolPan','toolGuide','toolText','toolBg'];
+  const buttons = ids.map(id => document.getElementById(id)).filter(Boolean);
+  const btnSettings = document.getElementById('toolSettings');
+
+  function setActiveById(id){
+    buttons.concat(btnSettings||[]).forEach(b=> b && b.classList.remove('active'));
+    const el = document.getElementById(id);
+    if(el) el.classList.add('active');
+  }
+
+  const origSetTool = (typeof window.setTool === 'function') ? window.setTool : null;
+  window.setTool = function(tool){
+    if(origSetTool) origSetTool(tool);
+    const id = 'tool' + tool.charAt(0).toUpperCase() + tool.slice(1);
+    setActiveById(id);
+    const panel = document.getElementById('flyout') || document.getElementById('settingsPanel');
+    if(panel) panel.classList.add('hidden'); // ツール切替時は閉じる
+  };
+
+  buttons.forEach(btn=>{
+    const t = btn.id.replace(/^tool/,'').toLowerCase();
+    btn.addEventListener('click', ()=> window.setTool(t));
+  });
+
+  // 初期アクティブはペン
+  setActiveById('toolPen');
+})();
+</script>
 </body>
 </html>
+
