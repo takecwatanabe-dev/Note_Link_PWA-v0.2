@@ -1,43 +1,38 @@
-/* === Note Link UI hotfix v0.6.8 / No.12-HF === */
 :root{
-  --bg:#0f172a; --panel:#111827; --ink:#e5e7eb; --muted:#374151; --accent:#38d39f;
-  --sbw:56px;             /* サイドバー通常幅 */
-  --sbw-collapsed:40px;   /* 折畳み時（アイコンだけ） */
+  --ink:#e5e7eb; --muted:#475569; --bg:#0b1220; --accent:#50C878;
 }
 
-/* レイアウト：左=サイドバー 右=ステージ */
-#wrap{ display:grid; grid-template-columns: var(--sbw) 1fr; height:calc(100% - 48px); transition:grid-template-columns .18s ease; }
-#wrap.collapsed{ grid-template-columns: var(--sbw-collapsed) 1fr; }
+html,body{color:var(--ink);background:#0b1220}
+button{font:inherit}
 
-#sidebar{
-  background:var(--panel); border-right:1px solid var(--muted);
-  padding:6px; overflow:hidden;
+ /* 左ツールバー（クラスでもIDでもOKにする） */
+#sidebar,.sidebar{
+  width:56px; padding:8px 6px; border-right:1px solid var(--muted);
+  background:#0b1220; display:flex; flex-direction:column; gap:8px;
+}
+#sidebar[data-collapsed="1"],.sidebar[data-collapsed="1"]{ width:44px; }
+
+ /* ツールボタン */
+#sidebar .tool,.sidebar .tool,#btnCollapse{
+  width:40px;height:40px;border-radius:10px;border:1px solid var(--muted);
+  display:grid;place-items:center;background:#0b1220;color:var(--ink);cursor:pointer;
+}
+#sidebar .tool img,#sidebar .tool svg,
+.sidebar .tool img,.sidebar .tool svg,#btnCollapse svg{ width:18px;height:18px; filter:grayscale(1) brightness(1.05); }
+
+ /* アクティブ強調（緑グロー：前回の見た目に復帰） */
+#sidebar .tool.active,.sidebar .tool.active,#btnCollapse.active{
+  outline:2px solid var(--accent);
+  box-shadow:0 0 0 3px rgba(80,200,120,.25), 0 0 8px rgba(80,200,120,.35) inset;
+  color:var(--accent);
 }
 
-/* ツール群（クラスが無い環境でも効くようフォールバック） */
-#sidebar .tool, 
-#toolPen,#toolHighlighter,#toolEraser,#toolPan,#toolGuide,#toolText,#toolBg,#toolSettings,#btnCollapse{
-  width:40px; height:40px; border-radius:12px;
-  display:grid; place-items:center;
-  background:#0b1220; color:var(--ink);
-  border:1px solid #475569; cursor:pointer;
+ /* 上部メニューの縦ズレ整列 */
+header .actions button, .topbar button, .topbar .btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  height:28px; line-height:1; padding:0 8px; vertical-align:middle;
 }
 
-/* インラインSVGの見た目統一（白黒化） */
-#sidebar .tool svg,
-#toolPen svg,#toolHighlighter svg,#toolEraser svg,#toolPan svg,#toolGuide svg,#toolText svg,#toolBg svg,#toolSettings svg,#btnCollapse svg{
-  width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.8;
-}
-
-/* アクティブ強調（以前の太め緑グローに復帰） */
-#sidebar .tool.active,
-#toolPen.active,#toolHighlighter.active,#toolEraser.active,#toolPan.active,#toolGuide.active,#toolText.active,#toolBg.active,#toolSettings.active{
-  border-color:var(--accent); color:var(--accent);
-  box-shadow:0 0 0 2px rgba(56,211,159,.25) inset, 0 0 10px rgba(56,211,159,.45);
-}
-
-/* 折畳みトグル（常に先頭に見える） */
-#btnCollapse{ margin-bottom:6px; }
-
-/* 上部メニューの文字の縦ズレを抑える（中央揃え） */
-header .actions button{ display:inline-grid; place-items:center; height:28px; padding:0 10px; line-height:1; }
+ /* 設定パネルの基本（存在すれば） */
+#settingsPanel,.flyout{ background:rgba(17,24,39,.98); border:1px solid var(--muted); border-radius:12px; }
+.hidden{ display:none !important;}
