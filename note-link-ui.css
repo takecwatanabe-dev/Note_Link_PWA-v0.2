@@ -1,191 +1,99 @@
-/* Note Link UI — single CSS file
-   v0.6.8 / No.12  （cache bust例：.../note-link-ui.css?v=0.6.8-No.12）
-============================================================== */
-
-/* ---------- Theme tokens ---------- */
 :root{
-  --bg:#0f172a;          /* app background */
-  --stage:#0b1220;       /* canvas周り */
-  --panel:#111827;       /* パネル&サイドバー */
   --ink:#e5e7eb;         /* 文字色 */
-  --muted:#374151;       /* 枠線/セパレータ */
-  --accent:#50C878;      /* アクティブ緑 */
-  --accent-soft: color-mix(in srgb, var(--accent) 50%, transparent);
-
-  --tool:40px;           /* アイコンの基準サイズ（△含む） */
-  --radius:12px;         /* 角丸の基準 */
-  --pad:8px;             /* サイドバー内の余白 */
-  --gap:8px;             /* サイドバー内の間隔 */
-  --topbar-h:36px;       /* 上部メニューの高さ */
-  --shadow: 0 0 0 0 rgba(0,0,0,0);
+  --muted:#475569;       /* 枠など */
+  --bg:#0b1022;          /* 背景 */
+  --accent:#34d399;      /* 緑グロー */
+  --accent-weak: rgba(52,211,153,.25);
 }
 
-/* ---------- Base ---------- */
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
-html{ color-scheme: dark; }
 body{
   margin:0;
-  background:var(--bg);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
   color:var(--ink);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP",
-               "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
-  overflow:hidden;
+  background:var(--bg);
 }
 
-/* ---------- Top bar (ページ移動/保存/共有など) ---------- */
-header, .topbar{
-  height:var(--topbar-h);
-  display:flex; align-items:center; gap:8px;
-  padding:0 10px;
-  border-bottom:1px solid var(--muted);
-  background:var(--panel);
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 10px; border-bottom:1px solid var(--muted);
 }
-header .brand{ display:flex; align-items:center; gap:8px; font-weight:700; }
-header .actions, .topbar{ margin-left:auto; display:flex; gap:6px; }
-header button, .topbar button{
-  height:28px; padding:0 8px;
-  display:inline-flex; align-items:center; justify-content:center;
-  border:1px solid var(--muted); border-radius:10px;
-  background:#0b1220; color:var(--ink);
-  line-height:28px;    /* ← 文字の上下ズレ解消 */
+.topbar .brand{ font-weight:600; }
+.topbar .actions button{
+  margin-left:8px; padding:6px 10px;
+  background:#111827; color:var(--ink); border:1px solid var(--muted);
+  border-radius:8px; cursor:pointer;
 }
-header button:hover, .topbar button:hover{ border-color:var(--accent); }
+.topbar .actions button:active{ transform:translateY(1px); }
 
-/* ページャ */
-.pager{ display:flex; align-items:center; gap:6px; }
-.pager .count{ min-width:56px; text-align:center; font-variant-numeric: tabular-nums; }
+.wrap{ display:grid; grid-template-columns: 64px 1fr; height: calc(100vh - 46px); }
 
-/* ---------- Layout ---------- */
-.wrap{
-  display:grid;
-  grid-template-columns: calc(var(--tool) + var(--pad)*2) 1fr;
-  grid-template-rows: 1fr;
-  height: calc(100% - var(--topbar-h));
-}
-/* 横方向の折り畳み時（最小幅＝アイコン1列ぶん） */
-.wrap.collapsedX{
-  grid-template-columns: calc(var(--tool) + var(--pad)*2) 1fr !important;
-}
-
-/* ---------- Sidebar (tools) ---------- */
 .sidebar{
-  background:var(--panel);
   border-right:1px solid var(--muted);
-  padding:var(--pad);
-  display:flex; flex-direction:column; align-items:center;
-  gap:var(--gap);
-  overflow:visible;
+  padding:8px 6px; display:flex; flex-direction:column; gap:8px;
+  background:#0b1120;
+  position:relative;
 }
-.sidebar .group{ width:100%; display:flex; flex-direction:column; align-items:center; gap:6px; }
+.sidebar .caret{
+  width:40px; height:24px; align-self:flex-start;
+  border:1px solid var(--muted); border-radius:6px; background:#0b1225; color:var(--ink);
+  cursor:pointer;
+}
+.sidebar .tool{
+  width:40px; height:40px; border-radius:10px;
+  display:grid; place-items:center; cursor:pointer;
+  background:#0b1225; border:1px solid var(--muted);
+  outline:0;
+}
+.sidebar .tool svg{ width:18px; height:18px; filter:grayscale(1) brightness(1); }
+.sidebar .tool.active{
+  box-shadow:0 0 0 3px var(--accent-weak), 0 0 0 1px var(--accent) inset;
+  border-color:var(--accent);
+}
+.sidebar .tool.active svg{ filter:none; }
 
-.toggleBar{
-  /* △/▽トグル — ツールと同じサイズで静的配置（重なり対策） */
-  position:static !important;
-  width:var(--tool); height:var(--tool);
-  display:grid; place-items:center;
-  background:#0b1220; color:var(--ink);
-  border:1px solid var(--muted); border-radius:var(--radius);
-  cursor:pointer; user-select:none;
-}
-.toggleBar:hover{ border-color:var(--accent); }
-.toggleBar.active{
-  outline:2px solid var(--accent);
-  box-shadow:0 0 12px var(--accent-soft);
-}
+/* 折りたたみ */
+.sidebar[data-collapsed="1"]{ width:52px; }
+.sidebar[data-collapsed="1"] .tool:not(.caret){ display:none; }
+.sidebar[data-collapsed="1"] .caret{ width:40px; }
+.sidebar[data-collapsed="1"] .caret::after{ content:"▸"; }
+.sidebar[data-collapsed="0"] .caret::after{ content:"▾"; }
 
-/* tool buttons */
-.tool{
-  width:var(--tool); height:var(--tool);
-  display:grid; place-items:center;
-  background:#0b1220; color:var(--ink);
-  border:1px solid var(--muted); border-radius:var(--radius);
-  cursor:pointer; user-select:none;
-  transition:border-color .15s ease, box-shadow .15s ease;
-}
-.tool img, .tool svg{ width:18px; height:18px; filter:grayscale(1) brightness(1.05); }
-.tool:hover{ border-color:var(--accent); }
-.tool.active{
-  outline:2px solid var(--accent);
-  box-shadow:0 0 14px var(--accent-soft);
-}
-.tool.active img, .tool.active svg{ filter:none; }
-
-/* 小さめのラベル（必要なら） */
-.tool-label{ font-size:10px; opacity:.8; }
-
-/* 縦方向の折り畳み（サイドバーの背丈を抑える） */
-.sidebar.collapsedY{
-  max-height: calc(var(--tool) + var(--pad)*2);
-  overflow:hidden;
+/* 右側ステージ */
+.stage{ position:relative; overflow:hidden; }
+#board{
+  width:100%; height:100%;
+  display:block;
 }
 
-/* ---------- Stage / Canvas ---------- */
-.stage{ position:relative; background:var(--stage); }
-canvas{ display:block; width:100%; height:100%; background:transparent; }
-
-.pageIndicator{ position:absolute; top:8px; right:8px; opacity:.6; display:none; }
-
-/* ---------- Settings flyout (ギアのパネル) ---------- */
-.flyout{
-  position:absolute; top:72px; left:72px;
-  width:360px; max-width:90vw; max-height:70vh; overflow:auto;
-  background:rgba(17,24,39,.98);
-  border:1px solid var(--muted); border-radius:14px;
-  box-shadow:0 10px 32px rgba(0,0,0,.45);
-  padding:12px;
-  backdrop-filter: blur(6px);
-  z-index:10;
+/* 設定パネル（ツールごとに単独表示） */
+.panel{
+  position:absolute; left:80px; top:60px; width:280px;
+  background:#0b1225; border:1px solid var(--muted);
+  border-radius:12px; padding:12px; display:none; gap:6px;
+  box-shadow:0 10px 20px rgba(0,0,0,.35);
 }
-.flyout.hidden{ display:none; }
-
-.flyoutHeader{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
-.flyoutHeader .title{ font-weight:700; }
-
-.closeX{
-  width:28px; height:28px;
-  display:grid; place-items:center;
-  border:1px solid var(--muted); border-radius:8px;
-  background:#0b1220; color:var(--ink);
+.panel.show{ display:grid; }
+.panel .panel-title{ font-weight:700; margin-bottom:6px; }
+.panel label{ display:grid; grid-template-columns: 1fr auto; align-items:center; gap:10px; margin:6px 0; }
+.panel input[type="color"]{ width:40px; height:24px; border:0; background:transparent; }
+.panel input[type="range"]{ width:160px; }
+.panel .row{ margin:8px 0; }
+.panel .danger{
+  background:#7f1d1d; color:#fff; border:1px solid #b91c1c;
+  padding:6px 10px; border-radius:8px; cursor:pointer;
+}
+.panel .hint{ font-size:12px; opacity:.75; margin-top:4px; }
+.panel .subhint{ font-size:12px; opacity:.65; }
+.panel .close{
+  justify-self:end; margin-top:6px;
+  background:#111827; color:var(--ink); border:1px solid var(--muted);
+  border-radius:8px; padding:4px 10px; cursor:pointer;
 }
 
-.tabbar{ display:flex; gap:6px; margin-bottom:6px; flex-wrap:wrap; }
-.tabbar button{
-  height:28px; padding:0 8px;
-  border:1px solid var(--muted); border-radius:8px;
-  background:#0b1220; color:var(--ink); line-height:28px;
-}
-.tabbar button.active{ border-color:var(--accent); background:#10212f; }
-
-/* 設定フォーム内の共通 */
-.panel h3{ margin:6px 0 10px; font-size:14px; }
-.row{ display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
-.row input[type="range"]{ width:160px; }
-.hint{ font-size:12px; opacity:.75; line-height:1.4; }
-
-/* カラースウォッチ（背景色など） */
-.swatch{ width:22px; height:22px; border-radius:6px; border:1px solid #64748b; cursor:pointer; }
-.swatchRow{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-
-/* テキスト入力（キャンバス上の編集用） */
-.textInput{
-  position:absolute; background:#ffffff; color:#111827;
-  border:1px solid #94a3b8; border-radius:6px; padding:4px 6px; min-width:120px; outline:none;
-}
-
-/* ---------- Misc ---------- */
-/* 上部メニューのボタン文字の縦位置ズレ/高さ統一（フォールバック用） */
-button{ font:inherit; }
-
-/* 印刷時：キャンバスだけ出力（必要に応じて） */
+/* 印刷時はキャンバスだけ */
 @media print{
-  body{ margin:0; }
-  header, .sidebar, .flyout{ display:none !important; }
-  .wrap{ grid-template-columns: 1fr !important; }
-}
-
-/* 小画面の微調整 */
-@media (max-width:640px){
-  :root{ --tool:36px; }
-  .flyout{ left:16px; right:16px; width:auto; }
+  .topbar, .sidebar, .panel{ display:none !important; }
+  .wrap{ grid-template-columns: 0 1fr; }
 }
