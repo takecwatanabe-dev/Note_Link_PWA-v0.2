@@ -1,99 +1,175 @@
+/* =========================
+ Note Link UI CSS — v0.6.8-fix5 (No.13)
+ 目的:
+  - ツールバーの△/▽を1つに統一（テキスト無し、CSSの ::after で描画）
+  - 折り畳み時に“上へ完全に畳む”（横にズレない）
+  - ツールアイコンの視認性(白/灰)とサイズ統一、アクティブ時は太めの緑グロー
+  - 設定パネルは上部左寄せで浮かせる
+========================= */
+
+/* ---- 色・共通 ---- */
 :root{
-  --ink:#e5e7eb;         /* 文字色 */
-  --muted:#475569;       /* 枠など */
-  --bg:#0b1022;          /* 背景 */
-  --accent:#34d399;      /* 緑グロー */
-  --accent-weak: rgba(52,211,153,.25);
+  --ink:#e5e7eb;         /* 文字・アイコン基調色（明い灰） */
+  --muted:#475569;       /* 線・枠の落ち着いた灰 */
+  --bg:#0b1220;          /* 背景 */
+  --accent:#50fa7b;      /* 強調(緑) */
+  --accent-dim:#1b8f4b;  /* 強調の影 */
+  --panel:#0e1628;       /* パネル背景 */
+  --panel-border:#1b2235;
+  --shadow:0 8px 30px rgba(0,0,0,.35);
 }
 
-*{ box-sizing:border-box; }
-html,body{ height:100%; }
-body{
-  margin:0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
-  color:var(--ink);
-  background:var(--bg);
+html,body{height:100%;}
+html,body,#wrap{background:var(--bg); color:var(--ink);}
+
+/* ---- 上部メニュー（印刷/PNG/共有など） ---- */
+header .topbar,
+header .topbar button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+header .topbar{
+  gap:8px; padding:8px 10px;
+}
+header .topbar button{
+  min-height:28px; padding:0 10px;
+  border:1px solid var(--muted);
+  background:transparent; color:var(--ink);
+  border-radius:10px; line-height:1;
+}
+header .topbar button:active{ transform:translateY(1px); }
+
+/* ---- サイドバー（ツールバー） ---- */
+#sidebar{
+  position:fixed; inset:56px auto 0 0; /* 上56px分は上部メニューを避ける前提 */
+  width:64px; padding:8px 6px; border-right:1px solid var(--panel-border);
+  display:flex; flex-direction:column; gap:8px;
+  background:rgba(0,0,0,.12); backdrop-filter:saturate(1.2) blur(0px);
+  z-index:10;
 }
 
-.topbar{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:8px 10px; border-bottom:1px solid var(--muted);
+/* サイドバー 折り畳み時（“上へ隠す”） */
+#sidebar[data-collapsed="1"]{
+  transform:translateY(-72px); /* △/▽ごと上へ消える */
+  transition:transform .25s ease;
 }
-.topbar .brand{ font-weight:600; }
-.topbar .actions button{
-  margin-left:8px; padding:6px 10px;
-  background:#111827; color:var(--ink); border:1px solid var(--muted);
-  border-radius:8px; cursor:pointer;
-}
-.topbar .actions button:active{ transform:translateY(1px); }
+#sidebar:not([data-collapsed]){ transition:transform .25s ease; }
 
-.wrap{ display:grid; grid-template-columns: 64px 1fr; height: calc(100vh - 46px); }
-
-.sidebar{
-  border-right:1px solid var(--muted);
-  padding:8px 6px; display:flex; flex-direction:column; gap:8px;
-  background:#0b1120;
-  position:relative;
-}
-.sidebar .caret{
-  width:40px; height:24px; align-self:flex-start;
-  border:1px solid var(--muted); border-radius:6px; background:#0b1225; color:var(--ink);
-  cursor:pointer;
-}
+/* ツールボタン（48px） */
 .sidebar .tool{
+  width:48px; height:48px; margin:0 auto;
+  border-radius:12px;
+  display:grid; place-items:center;
+  color:#cbd5e1; background:rgba(255,255,255,.03);
+  border:1px solid var(--panel-border);
+  cursor:pointer; user-select:none;
+  transition:box-shadow .15s, outline .15s, background .15s, color .15s;
+}
+.sidebar .tool svg,
+.sidebar .tool img{ width:22px; height:22px; filter:grayscale(1) brightness(1); }
+.sidebar .tool:hover{ background:rgba(255,255,255,.06); }
+
+.sidebar .tool.active{
+  color:var(--ink); background:rgba(80,250,123,.06);
+  outline:2px solid var(--accent);
+  box-shadow:
+    0 0 0 3px rgba(80,250,123,.18) inset,
+    0 0 12px 2px rgba(80,250,123,.25),
+    0 10px 30px rgba(0,0,0,.35);
+}
+
+/* ---- 折り畳みトグル（△/▽） ---- */
+/* HTML側は <button id="btnCollapse" class="caret" aria-label="ツールを折りたたむ"></button> など、中身は空でOK */
+.caret{
+  position:fixed; left:8px; top:8px; z-index:11;
   width:40px; height:40px; border-radius:10px;
   display:grid; place-items:center; cursor:pointer;
-  background:#0b1225; border:1px solid var(--muted);
-  outline:0;
+  color:#cbd5e1; background:rgba(255,255,255,.06);
+  border:1px solid var(--panel-border);
+  transition:filter .15s, transform .15s, outline .15s, background .15s;
 }
-.sidebar .tool svg{ width:18px; height:18px; filter:grayscale(1) brightness(1); }
-.sidebar .tool.active{
-  box-shadow:0 0 0 3px var(--accent-weak), 0 0 0 1px var(--accent) inset;
-  border-color:var(--accent);
+.caret:hover{ filter:brightness(1.05); }
+.caret:active{ transform:translateY(1px); }
+/* 三角はCSSで描画。展開時=▽、折畳時=△ */
+.caret::after{
+  content:"▾"; font-size:18px; line-height:1; transform:translateY(-1px);
 }
-.sidebar .tool.active svg{ filter:none; }
-
-/* 折りたたみ */
-.sidebar[data-collapsed="1"]{ width:52px; }
-.sidebar[data-collapsed="1"] .tool:not(.caret){ display:none; }
-.sidebar[data-collapsed="1"] .caret{ width:40px; }
-.sidebar[data-collapsed="1"] .caret::after{ content:"▸"; }
-.sidebar[data-collapsed="0"] .caret::after{ content:"▾"; }
-
-/* 右側ステージ */
-.stage{ position:relative; overflow:hidden; }
-#board{
-  width:100%; height:100%;
-  display:block;
+#sidebar[data-collapsed="1"] ~ .caret::after{ content:"▴"; transform:translateY(1px); }
+/* アクティブ強調（折畳み直前などで使用する場合） */
+.caret.active{
+  outline:2px solid var(--accent);
+  box-shadow:0 0 0 3px rgba(80,250,123,.18) inset, 0 0 12px 2px rgba(80,250,123,.25);
 }
 
-/* 設定パネル（ツールごとに単独表示） */
-.panel{
-  position:absolute; left:80px; top:60px; width:280px;
-  background:#0b1225; border:1px solid var(--muted);
-  border-radius:12px; padding:12px; display:none; gap:6px;
-  box-shadow:0 10px 20px rgba(0,0,0,.35);
+/* ---- 設定パネル ---- */
+#settingPanel, .panel{
+  position:fixed; left:88px; top:96px; z-index:12;
+  width:min(520px, calc(100vw - 120px));
+  padding:16px 14px;
+  background:var(--panel);
+  border:1px solid var(--panel-border);
+  border-radius:14px; box-shadow:var(--shadow);
 }
-.panel.show{ display:grid; }
-.panel .panel-title{ font-weight:700; margin-bottom:6px; }
-.panel label{ display:grid; grid-template-columns: 1fr auto; align-items:center; gap:10px; margin:6px 0; }
-.panel input[type="color"]{ width:40px; height:24px; border:0; background:transparent; }
-.panel input[type="range"]{ width:160px; }
-.panel .row{ margin:8px 0; }
-.panel .danger{
-  background:#7f1d1d; color:#fff; border:1px solid #b91c1c;
-  padding:6px 10px; border-radius:8px; cursor:pointer;
+#settingPanel h3{ margin:0 0 8px; font-size:16px; }
+#settingPanel .row{ display:flex; align-items:center; gap:12px; margin:10px 0; }
+#settingPanel .row label{ width:72px; color:#aab4c1; }
+#settingPanel input[type="color"]{ 
+  appearance:none; width:28px; height:18px; border:1px solid #344055; border-radius:4px; padding:0;
 }
-.panel .hint{ font-size:12px; opacity:.75; margin-top:4px; }
-.panel .subhint{ font-size:12px; opacity:.65; }
-.panel .close{
-  justify-self:end; margin-top:6px;
-  background:#111827; color:var(--ink); border:1px solid var(--muted);
-  border-radius:8px; padding:4px 10px; cursor:pointer;
+#settingPanel input[type="range"]{
+  width:280px; accent-color:var(--accent);
+}
+#settingPanel .hint{ margin-top:6px; color:#9fb0c1; font-size:12px; opacity:.8; }
+#settingPanel .close{
+  margin-top:12px; min-height:28px; padding:0 12px; border-radius:10px;
+  border:1px solid var(--muted); color:var(--ink); background:transparent;
 }
 
-/* 印刷時はキャンバスだけ */
-@media print{
-  .topbar, .sidebar, .panel{ display:none !important; }
-  .wrap{ grid-template-columns: 0 1fr; }
+/* ---- キャンバス ---- */
+#board, .board{
+  position:fixed; inset:56px 0 0 64px;  /* 上:メニューぶん、左:サイドバーぶん */
+}
+#sidebar[data-collapsed="1"] ~ #board{
+  inset:56px 0 0 0;                     /* 左を開放（全幅） */
+  transition:inset .25s ease;
+}
+#board canvas{ display:block; width:100%; height:100%; }
+
+/* ---- ページナビ（1/1, 前/次, +/−） ---- */
+.pager{
+  position:fixed; right:18px; top:8px; display:flex; gap:6px; z-index:11;
+}
+.pager button{
+  min-width:28px; height:28px; padding:0 8px; border-radius:10px;
+  border:1px solid var(--panel-border); color:var(--ink); background:rgba(255,255,255,.06);
+}
+.pager .status{ padding:0 10px; display:grid; place-items:center; }
+
+/* ---- 共有モーダルなど汎用 ---- */
+.modal{
+  position:fixed; inset:0; display:grid; place-items:center; z-index:20;
+  background:rgba(0,0,0,.45);
+}
+.modal .sheet{
+  width:min(560px, 92vw); padding:18px; border-radius:14px;
+  background:var(--panel); border:1px solid var(--panel-border); color:var(--ink);
+  box-shadow:var(--shadow);
+}
+
+/* ---- 細かいユーティリティ ---- */
+.hidden{ display:none !important; }
+.center{ display:grid; place-items:center; }
+
+/* ---- スクロールバー（見えづらくしすぎない） ---- */
+*::-webkit-scrollbar{ width:10px; height:10px; }
+*::-webkit-scrollbar-thumb{ background:#334155; border-radius:8px; }
+*::-webkit-scrollbar-track{ background:#0b1220; }
+
+/* ---- モバイル/タブレット（幅<=900px） ---- */
+@media (max-width:900px){
+  #sidebar{ width:56px; }
+  .sidebar .tool{ width:44px; height:44px; }
+  .caret{ left:6px; top:6px; width:38px; height:38px; }
+  #settingPanel, .panel{ left:76px; width:min(520px, calc(100vw - 92px)); top:82px; }
 }
