@@ -69,3 +69,39 @@ body{font-family:system-ui, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
   .topbar, .sidebar, .palette{display:none !important}
   #wrap{grid-template-columns:1fr}
 }
+/* === toolbar fixes v0.6.9-fix2 === */
+:root{
+  --tool-btn: 42px;         /* ボタン枠サイズ */
+  --icon-size: 22px;        /* アイコンサイズ */
+  --active-glow: 0 0 0 3px rgba(132,240,201,.9);
+}
+
+/* 共通サイズ */
+.sidebar .tool,
+.sidebar .toggle-btn{
+  width:var(--tool-btn);
+  height:var(--tool-btn);
+}
+
+/* アイコンサイズ */
+.sidebar .tool svg,
+.sidebar .toggle-btn svg{
+  width:var(--icon-size);
+  height:var(--icon-size);
+}
+
+/* アクティブは「ツールのみ」 */
+.sidebar .tool.active{
+  outline:2px solid #84f0c9;
+  box-shadow:var(--active-glow);
+  border-radius:10px;
+}
+/* トグルはアクティブ装飾なし */
+.sidebar .toggle-btn{
+  outline:none;
+  box-shadow:none;
+}
+
+/* 折り畳み時は幅をしっかり詰めてノート領域に干渉しない */
+.sidebar[data-collapsed="1"]{ width:44px; }
+.sidebar[data-collapsed="1"] .tool-label{ display:none; }
