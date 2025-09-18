@@ -306,5 +306,43 @@ if ('serviceWorker' in navigator) {
 /* ====== 初回レイアウト ====== */
 requestAnimationFrame(resize);
 </script>
+<script>
+/* === active & collapse fixes v0.6.9-fix2 === */
+const toolbar = document.querySelector('#sidebar') || document.querySelector('.sidebar');
+const toolButtons = toolbar ? Array.from(toolbar.querySelectorAll('.tool[data-tool]')) : [];
+const toggleBtn = toolbar ? toolbar.querySelector('.toggle-btn') : null;
+
+function closeSettings(){ 
+  // 既に関数がある場合は何もしない。無い場合の最小実装。
+  const p = document.querySelector('.panel, .settings-panel');
+  if (p) p.remove();
+}
+function openSettingsFor(name){
+  // 既存の実装があればそれが呼ばれます。無ければ何もしない安全実装。
+  if (typeof window._openSettingsFor === 'function') return window._openSettingsFor(name);
+}
+
+function setActiveTool(name){
+  toolButtons.forEach(b => b.classList.toggle('active', b.dataset.tool === name));
+  window.activeTool = name;
+  closeSettings();
+  openSettingsFor(name);
+}
+
+toolButtons.forEach(btn => {
+  btn.addEventListener('click', () => setActiveTool(btn.dataset.tool));
+});
+
+if (toggleBtn){
+  toggleBtn.addEventListener('click', () => {
+    const c = toolbar.getAttribute('data-collapsed') === '1' ? '0' : '1';
+    toolbar.setAttribute('data-collapsed', c);
+  });
+}
+
+// 既定はペンをアクティブに
+setActiveTool('pen');
+</script>
 </body>
 </html>
+
