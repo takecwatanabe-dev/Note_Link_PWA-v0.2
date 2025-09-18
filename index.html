@@ -1,371 +1,362 @@
-<!DOCTYPE html>
-<html lang="ja" data-headlessui-focus-visible>
+<!doctype html>
+<html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Note Link v0.6.9-fix2 / No.13</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Note Link</title>
+<!-- 画面用CSS（このままでも動きます。外部CSSを使いたい場合は下の <style> を消し、note-link-ui.css を読み込んでOK） -->
+<style>
+:root{
+  --ink:#e5e7eb;           /* 文字/アイコン */
+  --bg:#0b1020;            /* 背景 */
+  --panel:#0f172a;         /* パネル */
+  --muted:#223244;         /* 枠/区切り */
+  --accent:#3bff90;        /* アクティブ緑 */
+  --accent-weak:rgba(59,255,144,.35);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  color:var(--ink);
+  background:var(--bg);
+  font-family:ui-sans-serif,system-ui,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif;
+}
 
-  <!-- キャッシュ回避のため、毎回 ?v= の値を変えてください -->
-  <link rel="stylesheet" href="note-link-ui.css?v=0.6.9-fix2-1726655940" />
+/* 上バー */
+header{
+  display:flex;align-items:center;gap:.75rem;
+  height:44px;padding:0 10px;border-bottom:1px solid var(--muted);
+}
+header .title{flex:1 1 auto;opacity:.8}
+.topbtn{
+  padding:6px 10px;border-radius:10px;border:1px solid var(--muted);
+  background:#111827;color:var(--ink);cursor:pointer
+}
+.topbtn:active{transform:translateY(1px)}
 
-  <!-- PWA系（既にある場合はそのまま） -->
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#0b1020" />
+/* レイアウト */
+#wrapper{height:calc(100% - 44px);display:grid;grid-template-columns:56px 1fr}
+#sidebar{
+  border-right:1px solid var(--muted);
+  display:flex;flex-direction:column;gap:8px;padding:8px;
+  overflow:hidden;transition:width .2s ease;
+}
+#sidebar[data-collapsed="1"]{width:20px}
+#sidebar .rail{position:relative}
+.tool{
+  display:grid;place-items:center; width:40px;height:40px;border-radius:10px;
+  border:1px solid var(--muted);background:#0e1626;cursor:pointer;
+}
+.tool svg{width:18px;height:18px;filter:grayscale(1) brightness(1.05)}
+.tool.active{
+  outline:2px solid var(--accent);
+  box-shadow:0 0 0 3px var(--accent-weak), 0 0 0 6px transparent;
+}
+#collapseBtn{position:sticky;top:0;z-index:1}
+#collapseBtn .chev{transition:transform .15s}
+#sidebar[data-collapsed="1"] #collapseBtn .chev{transform:rotate(180deg)}
+
+/* キャンバス域 */
+#stage{position:relative;overflow:auto}
+#board{display:block;width:100%;height:100%;}
+canvas#draw{
+  touch-action:none; /* タッチのスクロールを止める→「点だけ出る」不具合対策 */
+  width:100%;height:100%;
+}
+
+/* 設定パネル（アクティブツール専用） */
+#panel{
+  position:absolute;left:16px;top:16px;min-width:260px;
+  background:var(--panel);border:1px solid var(--muted);border-radius:12px;
+  padding:14px;box-shadow:0 6px 22px rgba(0,0,0,.35);display:none;
+}
+#panel.show{display:block}
+#panel h3{margin:0 0 .75rem;font-size:14px}
+.row{display:flex;align-items:center;gap:10px;margin:.5rem 0}
+.row label{width:70px;opacity:.8}
+.row input[type="color"]{width:50px;height:26px;border:0;background:#000;border-radius:6px}
+.row input[type="range"]{flex:1}
+
+/* 下の設定歯車 */
+#prefBtnWrap{position:absolute;left:8px;bottom:8px}
+</style>
 </head>
 <body>
-  <!-- ===== Top bar ===== -->
-  <header class="topbar" style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;">
-    <h1 class="app-title" style="margin:0;font-size:14px">Note Link v0.6.9-fix2 / No.13</h1>
-    <div class="actions">
-      <button id="btnPrint" title="印刷">印刷</button>
-      <button id="btnPng" title="PNG保存（背景込み）">PNG</button>
-      <button id="btnShare" title="共有">共有</button>
+<header>
+  <div class="title" id="verTxt">Note Link</div>
+  <button class="topbtn" id="btnPrint">印刷</button>
+  <button class="topbtn" id="btnPng">PNG</button>
+  <button class="topbtn" id="btnShare">共有</button>
+</header>
+
+<div id="wrapper">
+  <!-- サイドツール -->
+  <aside id="sidebar" data-collapsed="0">
+    <div class="rail">
+      <button class="tool" id="collapseBtn" title="折りたたむ">
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+
+      <button class="tool active" data-tool="pen" title="ペン">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 21l3-1 11-11-2-2L4 18l-1 3zM14 6l2 2" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+
+      <button class="tool" data-tool="marker" title="蛍光ペン">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 16l6 6 10-10-6-6L3 16z" stroke-width="2"/><path d="M14 10l-4 4" stroke-width="2"/></svg>
+      </button>
+
+      <button class="tool" data-tool="eraser" title="消しゴム">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 16l6 6h6l6-6-8-8L3 16z" stroke-width="2"/></svg>
+      </button>
+
+      <button class="tool" data-tool="hand" title="移動">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11V6a2 2 0 1 1 4 0v5m0-3a2 2 0 1 1 4 0v5m-8-2a2 2 0 1 1 4 0v7H8a4 4 0 0 1-4-4v-3a3 3 0 0 1 5-2z" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+
+      <button class="tool" data-tool="text" title="テキスト">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M10 6v12m4-12v12" stroke-width="2"/></svg>
+      </button>
     </div>
-  </header>
+  </aside>
 
-  <!-- ===== App wrapper ===== -->
-  <div id="wrap" style="position:relative; height:calc(100vh - 46px);">
+  <!-- メイン -->
+  <main id="stage">
+    <div id="panel"></div>
+    <canvas id="draw"></canvas>
+    <div id="prefBtnWrap">
+      <button class="tool" id="prefBtn" title="設定">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 5 15.4a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7.04 4.3l.06.06A1.65 1.65 0 0 0 8.92 4a1.65 1.65 0 0 0 1-1.51V2a2 2 0 0 1 4 0v.09c0 .66.39 1.26 1 1.51.57.24 1.23.11 1.68-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.44.45-.57 1.11-.33 1.68.25.61.86 1 1.51 1H21a2 2 0 0 1 0 4h-.09c-.66 0-1.26.39-1.51 1z" stroke-width="1.6"/></svg>
+      </button>
+    </div>
+  </main>
+</div>
 
-    <!-- ===== Sidebar ===== -->
-    <aside id="sidebar" class="sidebar" aria-label="ツールバー">
-      <div class="nl-stack">
-        <!-- 折り畳みトグル（JSが矢印を付与） -->
-        <button class="nl-tool nl-collapse-toggle" type="button" title="折り畳み" aria-label="折り畳み"></button>
+<script>
+/* ====== バージョン表記 ====== */
+const VERSION = "v0.6.9-fix2 / No.13";
+const verTxt = document.getElementById('verTxt');
+verTxt.textContent = `Note Link ${VERSION}`;
 
-        <!-- ツール：ペン -->
-        <button class="nl-tool" id="tool-pen" type="button" title="ペン" aria-label="ペン">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm18.71-11.04a1.003 1.003 0 0 0 0-1.42L19.21 2.29a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.8-1.66z"/>
-          </svg>
-        </button>
+/* ====== キャンバス準備（高DPI対応） ====== */
+const canvas = document.getElementById('draw');
+const ctx = canvas.getContext('2d');
+function fitCanvas(){
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const rect = document.getElementById('stage').getBoundingClientRect();
+  canvas.width = Math.floor(rect.width * dpr);
+  canvas.height = Math.floor((window.innerHeight - 44) * dpr);
+  canvas.style.width = rect.width + "px";
+  canvas.style.height = (window.innerHeight - 44) + "px";
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+addEventListener('resize', fitCanvas);
+fitCanvas();
 
-        <!-- ツール：蛍光ペン -->
-        <button class="nl-tool" id="tool-marker" type="button" title="蛍光ペン" aria-label="蛍光ペン">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M3 16l6-6 5 5-6 6H3v-5zm9.5-9.5l2-2a2.12 2.12 0 1 1 3 3l-2 2-3-3z"/>
-          </svg>
-        </button>
+/* ====== 状態 ====== */
+let tool = 'pen';
+let drawing = false;
+let last = null;
 
-        <!-- ツール：消しゴム -->
-        <button class="nl-tool" id="tool-eraser" type="button" title="消しゴム" aria-label="消しゴム">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M16.24 3.56a2 2 0 0 1 2.83 0l1.37 1.37a2 2 0 0 1 0 2.83L11.82 16.38a2 2 0 0 1-1.41.59H7.05a2 2 0 0 1-1.41-.59L3.56 14.3a2 2 0 0 1 0-2.83L16.24 3.56zM4 20h16v2H4z"/>
-          </svg>
-        </button>
+const state = {
+  pen:    {color:"#ffffff", size:3, alpha:1},
+  marker: {color:"#9bff84", size:16, alpha:.35},
+  eraser: {radius:18},
+  text:   {size:24}
+};
 
-        <!-- ツール：テキスト -->
-        <button class="nl-tool" id="tool-text" type="button" title="テキスト" aria-label="テキスト">
-          <span style="font-weight:700;font-size:16px;line-height:1">T</span>
-        </button>
+/* ====== ツール切替とUI ====== */
+const tools = [...document.querySelectorAll('.tool[data-tool]')];
+const panel = document.getElementById('panel');
+function setActive(t){
+  tool = t;
+  tools.forEach(b=>b.classList.toggle('active', b.dataset.tool===t));
+  renderPanel();
+}
+tools.forEach(b=>{
+  b.addEventListener('click', ()=>setActive(b.dataset.tool));
+});
+document.getElementById('collapseBtn').addEventListener('click',()=>{
+  const sb = document.getElementById('sidebar');
+  const now = sb.getAttribute('data-collapsed') === '1';
+  sb.setAttribute('data-collapsed', now ? '0':'1');
+});
 
-        <!-- 歯車：設定（最下部固定） -->
-        <button class="nl-tool settings" id="tool-settings" type="button" title="設定" aria-label="設定">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M19.43 12.98l1.77-1.02-1-1.73-2.04.35a6.96 6.96 0 0 0-1.2-.7l-.31-2.07h-2l-.31 2.07c-.42.17-.83.4-1.2.7l-2.04-.35-1 1.73 1.77 1.02a6.8 6.8 0 0 0 0 1.4L7.9 15.4l1 1.73 2.04-.35c.37.3.78.53 1.2.7l.31 2.07h2l.31-2.07c.42-.17.83-.4 1.2-.7l2.04.35 1-1.73-1.77-1.02c.05-.46.05-.94 0-1.4zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/>
-          </svg>
-        </button>
+/* ====== 設定パネル（選んだツールだけ表示） ====== */
+function row(label, control){
+  return `<div class="row"><label>${label}</label>${control}</div>`;
+}
+function renderPanel(){
+  let html = "";
+  if(tool==='pen'){
+    html = `
+      <h3>ペン設定</h3>
+      ${row('色', `<input type="color" id="penColor" value="${state.pen.color}">`)}
+      ${row('太さ', `<input type="range" id="penSize" min="1" max="32" value="${state.pen.size}">`)}
+      ${row('不透明度', `<input type="range" id="penAlpha" min="0" max="1" step="0.01" value="${state.pen.alpha}">`)}
+      <div style="opacity:.65">Shiftで直線（15°刻み）</div>
+      <div style="text-align:right"><button class="topbtn" id="closePanel">閉じる</button></div>
+    `;
+  }else if(tool==='marker'){
+    html = `
+      <h3>蛍光ペン設定</h3>
+      ${row('色', `<input type="color" id="mkColor" value="${state.marker.color}">`)}
+      ${row('太さ', `<input type="range" id="mkSize" min="6" max="48" value="${state.marker.size}">`)}
+      ${row('不透明度', `<input type="range" id="mkAlpha" min="0.05" max="0.6" step="0.01" value="${state.marker.alpha}">`)}
+      <div style="opacity:.65">ペンより薄く描画します</div>
+      <div style="text-align:right"><button class="topbtn" id="closePanel">閉じる</button></div>
+    `;
+  }else if(tool==='eraser'){
+    html = `
+      <h3>消しゴム設定</h3>
+      ${row('消し範囲', `<input type="range" id="erRadius" min="6" max="64" value="${state.eraser.radius}">`)}
+      <div class="row" style="justify-content:flex-end;gap:8px">
+        <button class="topbtn" id="clearAll">全面消去</button>
+        <button class="topbtn" id="closePanel">閉じる</button>
       </div>
-    </aside>
-
-    <!-- ===== Stage / Canvas area ===== -->
-    <main id="stage" style="position:relative; height:100%; margin-left:56px;">
-      <div id="canvasRoot" style="position:relative; width:100%; height:100%;">
-        <canvas id="canvas" style="position:absolute; inset:0;"></canvas>
+    `;
+  }else if(tool==='text'){
+    html = `
+      <h3>テキスト設定</h3>
+      ${row('文字サイズ', `<input type="range" id="txSize" min="12" max="72" value="${state.text.size}">`)}
+      <div class="row" style="justify-content:flex-start">
+        <button class="topbtn" id="addText">テキストを追加</button>
       </div>
+      <div style="text-align:right"><button class="topbtn" id="closePanel">閉じる</button></div>
+    `;
+  } else {
+    html = `<h3>設定</h3><div>ツールを選んでください</div>
+    <div style="text-align:right"><button class="topbtn" id="closePanel">閉じる</button></div>`;
+  }
+  panel.innerHTML = html;
+  panel.classList.add('show');
 
-      <!-- === Panels (ツール設定) === -->
-      <!-- ペン -->
-      <section id="pen-settings" class="tool-config" data-tool="pen" style="display:none">
-        <h3>ペン設定</h3>
-        <div class="row">
-          <label>色 <input type="color" id="penColor" value="#e5e7eb"></label>
-        </div>
-        <div class="row">
-          <label>太さ <input type="range" id="penSize" min="1" max="30" value="3"></label>
-        </div>
-        <div class="row">
-          <label>不透明度 <input type="range" id="penAlpha" min="0" max="1" step="0.05" value="1"></label>
-        </div>
-        <small>Shiftで直線（15°刻み）</small>
-      </section>
+  const byId = id=>panel.querySelector('#'+id);
+  if(byId('penColor')) byId('penColor').oninput = e=>state.pen.color = e.target.value;
+  if(byId('penSize'))  byId('penSize').oninput = e=>state.pen.size = +e.target.value;
+  if(byId('penAlpha')) byId('penAlpha').oninput = e=>state.pen.alpha = +e.target.value;
 
-      <!-- 蛍光ペン -->
-      <section id="highlighter-settings" class="tool-config" data-tool="highlighter" style="display:none">
-        <h3>蛍光ペン設定</h3>
-        <div class="row">
-          <label>色 <input type="color" id="hlColor" value="#56c7a8"></label>
-        </div>
-        <div class="row">
-          <label>太さ <input type="range" id="hlSize" min="4" max="60" value="16"></label>
-        </div>
-        <div class="row">
-          <label>不透明度 <input type="range" id="hlAlpha" min="0" max="1" step="0.05" value="0.35"></label>
-        </div>
-        <small>Shiftで直線（15°刻み）</small>
-      </section>
+  if(byId('mkColor')) byId('mkColor').oninput = e=>state.marker.color = e.target.value;
+  if(byId('mkSize'))  byId('mkSize').oninput  = e=>state.marker.size = +e.target.value;
+  if(byId('mkAlpha')) byId('mkAlpha').oninput = e=>state.marker.alpha = +e.target.value;
 
-      <!-- 消しゴム -->
-      <section id="eraser-settings" class="tool-config" data-tool="eraser" style="display:none">
-        <h3>消しゴム設定</h3>
-        <div class="row">
-          <label>消し範囲 <input type="range" id="eraserSize" min="8" max="80" value="34"></label>
-        </div>
-        <div class="row">
-          <button id="btnEraseAll">全面消去</button>
-        </div>
-      </section>
+  if(byId('erRadius')) byId('erRadius').oninput = e=>state.eraser.radius = +e.target.value;
+  if(byId('clearAll')) byId('clearAll').onclick = ()=>{ ctx.clearRect(0,0,canvas.width,canvas.height); };
 
-      <!-- テキスト -->
-      <section id="text-settings" class="tool-config" data-tool="text" style="display:none">
-        <h3>テキスト設定</h3>
-        <div class="row">
-          <label>文字サイズ <input type="range" id="textSize" min="10" max="72" value="24"></label>
-        </div>
-        <div class="row">
-          <button id="btnAddText">テキストを追加</button>
-        </div>
-      </section>
-    </main>
-  </div>
+  if(byId('txSize')) byId('txSize').oninput = e=>state.text.size = +e.target.value;
+  if(byId('addText')) byId('addText').onclick = ()=>{
+    const text = prompt("追加する文字を入力してください","");
+    if(!text) return;
+    ctx.save();
+    ctx.fillStyle = state.pen.color;
+    ctx.font = `${state.text.size}px ui-sans-serif, system-ui`;
+    ctx.fillText(text, 40, 80);
+    ctx.restore();
+  };
 
-  <!-- ===== Main Script（末尾に配置：既存のJSは全削除してこれだけ置く） ===== -->
-  <script>
-  /* Note Link UI + Drawing
-     version: v0.6.9-fix2 / No.13
-  */
-  (function(){
-    const ver = 'v0.6.9-fix2 / No.13';
-    const $  = (s, r=document) => r.querySelector(s);
-    const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+  if(byId('closePanel')) byId('closePanel').onclick = ()=>panel.classList.remove('show');
+}
+renderPanel();
+/* 設定ボタン */
+document.getElementById('prefBtn').addEventListener('click', ()=>{
+  if(panel.classList.contains('show')) panel.classList.remove('show');
+  else renderPanel();
+});
 
-    /* ---------- Sidebar init ---------- */
-    const sidebar = $('#sidebar') || $('.sidebar');
-    let stack = sidebar.querySelector('.nl-stack');
-    if (!stack){
-      stack = document.createElement('div'); stack.className='nl-stack';
-      Array.from(sidebar.children).forEach(ch=>stack.appendChild(ch));
-      sidebar.appendChild(stack);
+/* ====== 描画処理（Pointer Events / 角度スナップ） ====== */
+function snapAngle(dx,dy){
+  // Shift中は 0,15,30,45,60,75,90 度にスナップ
+  const ang = Math.atan2(dy,dx); // -π..π
+  const deg = (ang*180/Math.PI+360)%360;
+  const steps=[0,15,30,45,60,75,90,105,120,135,150,165,180,195,210,225,240,255,270,285,300,315,330,345];
+  let best=0, diff=999;
+  for(const s of steps){
+    const d = Math.min(Math.abs(deg-s), 360-Math.abs(deg-s));
+    if(d<diff){diff=d;best=s;}
+  }
+  const rad = best*Math.PI/180;
+  const len = Math.hypot(dx,dy);
+  return {dx:Math.cos(rad)*len, dy:Math.sin(rad)*len};
+}
+
+function begin(x,y){
+  drawing = true; last = {x,y};
+}
+function move(x,y,shiftKey){
+  if(!drawing) return;
+  ctx.save();
+  if(tool==='pen' || tool==='marker'){
+    const conf = (tool==='pen')? state.pen : state.marker;
+    ctx.globalAlpha = conf.alpha;
+    ctx.strokeStyle = conf.color;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = conf.size;
+
+    let from = {...last}, to = {x,y};
+    if(shiftKey){
+      const {dx,dy} = snapAngle(to.x-from.x, to.y-from.y);
+      to = {x:from.x+dx, y:from.y+dy};
     }
-    // ツールクラス付与
-    Array.from(stack.children).forEach(el=>{
-      const isBtn = el.matches('button,[role="button"],.tool');
-      if (isBtn && !el.classList.contains('nl-collapse-toggle')) el.classList.add('nl-tool');
-    });
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+    last = to;
+  }else if(tool==='eraser'){
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.beginPath();
+    ctx.arc(x,y, state.eraser.radius, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+function end(){ drawing=false; }
 
-    // 設定ボタンを最下部へ
-    const gear = $('#tool-settings') || $$('.nl-tool', stack).at(-1);
-    if (gear) gear.classList.add('settings');
-    if (!$('.nl-spacer', sidebar)) {
-      const sp=document.createElement('div'); sp.className='nl-spacer';
-      sidebar.insertBefore(sp, gear||null);
+/* ポインタ */
+function getXY(e){
+  const rect = canvas.getBoundingClientRect();
+  return { x:e.clientX-rect.left, y:e.clientY-rect.top };
+}
+canvas.addEventListener('pointerdown', e=>{
+  e.preventDefault();
+  canvas.setPointerCapture(e.pointerId);
+  const {x,y} = getXY(e);
+  if(tool==='hand'){ /* 今は簡易。改良は次版で */ return; }
+  begin(x,y);
+});
+canvas.addEventListener('pointermove', e=>{
+  if(!drawing) return;
+  const {x,y} = getXY(e);
+  move(x,y, e.shiftKey);
+});
+['pointerup','pointercancel','pointerleave'].forEach(t=>{
+  canvas.addEventListener(t, ()=>end());
+});
+
+/* ====== 上部メニュー ====== */
+document.getElementById('btnPrint').onclick = ()=>window.print();
+document.getElementById('btnPng').onclick = ()=>{
+  const a = document.createElement('a');
+  a.download = 'note.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+};
+document.getElementById('btnShare').onclick = async ()=>{
+  const url = location.href.split('#')[0];
+  try{
+    if(navigator.share){
+      await navigator.share({title:'Note Link', url});
+    }else{
+      await navigator.clipboard.writeText(url);
+      alert('URLをクリップボードにコピーしました。');
     }
+  }catch(_){/* キャンセル等 */}
+};
 
-    // 折り畳みトグル
-    let toggle = $('.nl-collapse-toggle', stack);
-    if (!toggle){
-      toggle = document.createElement('button');
-      toggle.className='nl-tool nl-collapse-toggle'; toggle.type='button';
-      toggle.title='折り畳み'; toggle.ariaLabel='折り畳み';
-      stack.insertBefore(toggle, stack.firstChild);
-    }
-    const getCollapsed = ()=> localStorage.getItem('nl.sidebarCollapsed')==='1';
-    const setCollapsed = v => localStorage.setItem('nl.sidebarCollapsed', v?'1':'0');
-    const reflectArrow = ()=> toggle.dataset.arrow = getCollapsed() ? '▽':'△';
-    const applyCollapsed = ()=>{
-      sidebar.setAttribute('data-collapsed', getCollapsed()?'1':'0');
-      reflectArrow();
-    };
-    toggle.addEventListener('click', ()=>{ setCollapsed(!getCollapsed()); applyCollapsed(); });
-    applyCollapsed();
-
-    // アクティブ表示
-    function setActive(el){ $$('.nl-tool',stack).forEach(b=>b.classList.toggle('active', b===el)); }
-
-    // 初期アクティブ（ペン）
-    setActive($('#tool-pen') || $$('.nl-tool',stack)[1] || $$('.nl-tool',stack)[0]);
-
-    // パネルの出し分け
-    const panelMap = {
-      pen: $('#pen-settings'),
-      highlighter: $('#highlighter-settings'),
-      marker: $('#highlighter-settings'),  // alias
-      eraser: $('#eraser-settings'),
-      text: $('#text-settings')
-    };
-    function showPanel(key){
-      Object.values(panelMap).forEach(p=> p && (p.style.display='none'));
-      const p = panelMap[key]; if (p) p.style.display='';
-    }
-    showPanel('pen');
-
-    // ツール切替
-    $$('.nl-tool', stack).forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        if (btn.classList.contains('nl-collapse-toggle')) return;
-        setActive(btn);
-        const label = (btn.title||btn.ariaLabel||btn.textContent||'').toLowerCase();
-        if (label.includes('ペン') && !label.includes('蛍')) { currentTool='pen'; showPanel('pen'); }
-        else if (label.includes('蛍') || label.includes('marker') || label.includes('high')) { currentTool='highlighter'; showPanel('highlighter'); }
-        else if (label.includes('消') || label.includes('erase')) { currentTool='eraser'; showPanel('eraser'); }
-        else if (label.includes('文') || label.includes('text') || label.includes('テキスト')) { currentTool='text'; showPanel('text'); }
-      });
-    });
-
-    /* ---------- Canvas drawing ---------- */
-    const canvas = $('#canvas');
-    const root = $('#canvasRoot');
-    const ctx = canvas.getContext('2d');
-
-    function fit(){
-      const r = root.getBoundingClientRect();
-      // 物理ピクセル対応
-      const dpr = window.devicePixelRatio||1;
-      canvas.width = Math.max(1, Math.floor(r.width * dpr));
-      canvas.height = Math.max(1, Math.floor(r.height * dpr));
-      canvas.style.width = r.width+'px';
-      canvas.style.height = r.height+'px';
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-    }
-    window.addEventListener('resize', fit, {passive:true});
-    fit();
-
-    // 状態
-    let currentTool = 'pen';
-    const state = {
-      pen: { color: $('#penColor').value, size: +$('#penSize').value, alpha: +$('#penAlpha').value },
-      hl:  { color: $('#hlColor').value,  size: +$('#hlSize').value,  alpha: +$('#hlAlpha').value  },
-      eraser: { size: +$('#eraserSize').value },
-      text: { size: +$('#textSize').value }
-    };
-
-    // 設定イベント
-    $('#penColor').addEventListener('input', e=> state.pen.color=e.target.value);
-    $('#penSize').addEventListener('input', e=> state.pen.size=+e.target.value);
-    $('#penAlpha').addEventListener('input', e=> state.pen.alpha=+e.target.value);
-
-    $('#hlColor').addEventListener('input', e=> state.hl.color=e.target.value);
-    $('#hlSize').addEventListener('input', e=> state.hl.size=+e.target.value);
-    $('#hlAlpha').addEventListener('input', e=> state.hl.alpha=+e.target.value);
-
-    $('#eraserSize').addEventListener('input', e=> state.eraser.size=+e.target.value);
-    $('#btnEraseAll').addEventListener('click', ()=> { ctx.clearRect(0,0,canvas.width,canvas.height); });
-
-    $('#textSize').addEventListener('input', e=> state.text.size=+e.target.value);
-    $('#btnAddText').addEventListener('click', ()=>{
-      const t = document.createElement('div');
-      t.contentEditable = 'true';
-      t.textContent = 'テキスト';
-      Object.assign(t.style,{
-        position:'absolute', left:'80px', top:'80px', color:'#e5e7eb',
-        fontSize: state.text.size+'px', padding:'2px 4px', border:'1px dashed #27324a',
-        borderRadius:'6px', background:'rgba(0,0,0,.2)', cursor:'move'
-      });
-      // ドラッグ
-      let dragging=false, sx=0, sy=0, sl=0, st=0;
-      t.addEventListener('pointerdown', e=>{ dragging=true; sx=e.clientX; sy=e.clientY; sl=parseFloat(t.style.left); st=parseFloat(t.style.top); t.setPointerCapture(e.pointerId); });
-      t.addEventListener('pointermove', e=>{ if(!dragging) return; t.style.left = sl + (e.clientX-sx) + 'px'; t.style.top = st + (e.clientY-sy) + 'px'; });
-      t.addEventListener('pointerup',   e=>{ dragging=false; t.releasePointerCapture(e.pointerId); });
-      root.appendChild(t);
-      t.focus();
-    });
-
-    // 直線スナップ（15°刻み）
-    function snapToAngle(x0,y0,x1,y1){
-      const dx = x1-x0, dy=y1-y0;
-      const ang = Math.atan2(dy,dx);           // -pi..pi
-      const step = Math.PI/12;                 // 15°
-      const q = Math.round(ang/step)*step;
-      const len = Math.hypot(dx,dy);
-      return [x0 + Math.cos(q)*len, y0 + Math.sin(q)*len];
-    }
-
-    let drawing=false, lastX=0, lastY=0, startX=0, startY=0, shift=false;
-
-    function begin(x,y){
-      drawing=true; lastX=startX=x; lastY=startY=y;
-      ctx.lineCap='round'; ctx.lineJoin='round';
-      if (currentTool==='pen'){
-        ctx.globalCompositeOperation='source-over';
-        ctx.strokeStyle=state.pen.color;
-        ctx.globalAlpha=state.pen.alpha;
-        ctx.lineWidth=state.pen.size;
-        ctx.beginPath(); ctx.moveTo(x,y);
-      }else if(currentTool==='highlighter'){
-        ctx.globalCompositeOperation='source-over';
-        ctx.strokeStyle=state.hl.color;
-        ctx.globalAlpha=state.hl.alpha;
-        ctx.lineWidth=state.hl.size;
-        ctx.beginPath(); ctx.moveTo(x,y);
-      }else if(currentTool==='eraser'){
-        ctx.globalCompositeOperation='destination-out';
-        ctx.globalAlpha=1;
-        ctx.lineWidth=state.eraser.size;
-        ctx.beginPath(); ctx.moveTo(x,y);
-      }
-    }
-    function draw(x,y){
-      if(!drawing) return;
-      let tx=x, ty=y;
-      if (shift){ [tx,ty] = snapToAngle(startX,startY,x,y); }
-      ctx.lineTo(tx,ty); ctx.stroke();
-      lastX=tx; lastY=ty;
-    }
-    function end(){ if(!drawing) return; drawing=false; ctx.closePath(); ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over'; }
-
-    function rel(e){
-      const rect = canvas.getBoundingClientRect();
-      return [e.clientX-rect.left, e.clientY-rect.top];
-    }
-
-    canvas.addEventListener('pointerdown', e=>{
-      if (currentTool==='text') return; // テキストはボタンで追加
-      shift = e.shiftKey;
-      canvas.setPointerCapture(e.pointerId);
-      const [x,y] = rel(e); begin(x,y);
-    });
-    canvas.addEventListener('pointermove', e=>{
-      if(!drawing) return;
-      shift = e.shiftKey;
-      const [x,y] = rel(e); draw(x,y);
-    });
-    canvas.addEventListener('pointerup', e=>{
-      canvas.releasePointerCapture(e.pointerId);
-      end();
-    });
-
-    /* ---------- Export / Print / Share ---------- */
-    $('#btnPrint').addEventListener('click', ()=> window.print());
-
-    $('#btnPng').addEventListener('click', ()=>{
-      // 背景色込みで書き出す
-      const bg = '#0b1020';
-      const tmp = document.createElement('canvas');
-      tmp.width = canvas.width; tmp.height = canvas.height;
-      const tctx = tmp.getContext('2d');
-      tctx.fillStyle = bg; tctx.fillRect(0,0,tmp.width,tmp.height);
-      tctx.drawImage(canvas,0,0);
-      const url = tmp.toDataURL('image/png');
-      const a = document.createElement('a'); a.href=url; a.download='note.png'; a.click();
-    });
-
-    $('#btnShare').addEventListener('click', async ()=>{
-      const url = location.href;
-      if (navigator.share){
-        try { await navigator.share({title:'Note Link', url}); } catch(e){}
-      } else if (navigator.clipboard){
-        try { await navigator.clipboard.writeText(url); alert('URLをクリップボードにコピーしました'); } catch(e){}
-      } else {
-        prompt('このURLをコピーしてください', url);
-      }
-    });
-
-    /* ---------- SW registration（任意） ---------- */
-    if ('serviceWorker' in navigator){
-      navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
-    }
-
-    console.log('[NoteLink] ready', ver);
-  })();
-  </script>
+/* ====== Service Worker は一旦OFF（更新が反映しない問題回避） ====== */
+// もし service-worker.js を使っていたら、まずは登録解除してからこの版を使ってください。
+// DevTools > Application > Service Workers > (このオリジン) を Unregister。
+</script>
 </body>
 </html>
