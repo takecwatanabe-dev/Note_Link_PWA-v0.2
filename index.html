@@ -324,5 +324,49 @@
     }
   })();
   </script>
+  <script>
+(() => {
+  const $ = (s, r=document) => r.querySelector(s);
+  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+
+  const sidebar = $('#sidebar');
+  const collapseBtn = $('#collapseBtn');
+
+  // 折りたたみトグル
+  if (sidebar && collapseBtn) {
+    collapseBtn.addEventListener('click', () => {
+      const c = sidebar.getAttribute('data-collapsed') === '1' ? '0' : '1';
+      sidebar.setAttribute('data-collapsed', c);
+    }, {passive:true});
+  }
+
+  // ツール選択時のアクティブ表示とパネルの単独表示
+  const tools  = $$('#sidebar .tool[data-panel]');
+  const panels = $$('.settings-panel,.pen-panel,.marker-panel,.eraser-panel,.text-panel');
+
+  const showPanel = (id) => {
+    tools.forEach(b => b.classList.toggle('active', b.dataset.panel === id));
+    panels.forEach(p => p.hidden = (p.id !== id));
+  };
+
+  tools.forEach(b => {
+    b.addEventListener('click', () => {
+      const id = b.dataset.panel;
+      if (!id) return;
+      const target = $('#'+id);
+      const willOpen = target && target.hidden !== false ? id : '';
+      showPanel(willOpen);
+    }, {passive:true});
+  });
+
+  // ツール以外をクリックしたらパネルを閉じる（意図せぬ開きっぱなし防止）
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#sidebar') || e.target.closest('.settings-panel,.pen-panel,.marker-panel,.eraser-panel,.text-panel')) return;
+    showPanel('');
+  });
+})();
+</script>
+
 </body>
 </html>
+
