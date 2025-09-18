@@ -1,107 +1,137 @@
+/* Note Link UI stylesheet
+   version: v0.6.9-fix2 / No.13
+   purpose : toolbar sizing, collapse arrow, active glow, layout fixes
+   author  : ChatGPT
+*/
+
+/* ===== Theme tokens ===== */
 :root{
-  --ink:#e7eefb; --muted:#475569; --bg:#0b1020; --accent:#50c878;
+  --ink:#e5e7eb;         /* 文字・アイコン */
+  --bg:#0b1020;          /* 背景 */
+  --muted:#27324a;       /* 枠・境界 */
+  --accent:#55d38a;      /* アクティブの緑 */
+  --accent-weak:rgba(85,211,138,.35);
+  --shadow:0 0 0 1px rgba(0,0,0,.2), 0 6px 18px rgba(0,0,0,.35);
 }
 
-*{box-sizing:border-box}
+/* ===== Reset-ish ===== */
 html,body{height:100%}
-body{font-family:system-ui, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-     color:var(--ink); background:var(--bg);}
+html{background:var(--bg); color:var(--ink); font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;}
+*{box-sizing:border-box}
 
-/* トップバー */
-.topbar{display:flex; gap:12px; align-items:center; justify-content:space-between;
-  padding:10px 12px; position:sticky; top:0; z-index:30;
-  background:rgba(10,14,28,.6); backdrop-filter:blur(6px); border-bottom:1px solid #1b2439;}
-.topbar .ver{opacity:.8; font-weight:600}
-.topbar .btn{margin-left:6px}
-
-/* ボタン共通 */
-.btn{appearance:none; border:1px solid #2a3551; background:#121927; color:var(--ink);
-  padding:6px 10px; border-radius:10px; cursor:pointer}
-.btn:hover{box-shadow:0 0 0 2px rgba(80,200,120,.25) inset; color:#eafff3}
-.btn.ghost{background:transparent}
-.btn.danger{background:#2b1418; border-color:#5b1c24; color:#ffd7df}
-.btn.danger:hover{box-shadow:0 0 0 2px #5b1c24 inset}
-
-/* レイアウト */
-#wrap{display:grid; grid-template-columns: auto 1fr; height:calc(100% - 52px);}
-.stage{position:relative}
-#canvas{position:absolute; inset:0; width:100%; height:100%;}
-
-/* サイドバー */
-.sidebar{width:64px; border-right:1px solid #1b2439; padding:8px 6px; display:flex;
-  flex-direction:column; gap:8px; align-items:center; background:#0e1526; position:relative; z-index:20;
-  transition:width .2s ease;}
-.sidebar[data-collapsed="1"]{width:36px}
-.sidebar .collapse{
-  width:28px; height:28px; border-radius:8px; display:grid; place-items:center; margin:4px 0 6px;
-  background:#0f1a2e; border:1px solid #22304e; cursor:pointer;
+/* ===== Topbar (上部のボタン群) ===== */
+header.actions, .topbar, .topbar button{
+  display:inline-flex; align-items:center; gap:8px;
 }
-.sidebar .collapse .tri{width:16px; height:16px; fill:#a8b4d4; transition:transform .2s ease}
-.sidebar[data-collapsed="1"] .collapse .tri{transform:rotate(180deg)}
-.sidebar .tool{
-  width:44px; height:44px; border-radius:12px; background:#0f1a2e; border:1px solid #22304e;
-  display:grid; place-items:center; cursor:pointer; transition:all .12s ease; position:relative;
+.topbar button{
+  height:30px; padding:0 10px; border-radius:10px;
+  background:rgba(255,255,255,.05); color:var(--ink);
+  border:1px solid var(--muted);
 }
-.sidebar[data-collapsed="1"] .tool{width:28px; height:28px; border-radius:8px}
-.sidebar .tool svg{width:20px; height:20px; filter:grayscale(1) brightness(1.05)}
-.sidebar[data-collapsed="1"] .tool svg{width:16px; height:16px}
-.sidebar .tool:hover{box-shadow:0 0 0 2px rgba(80,200,120,.2) inset}
-.sidebar .tool.active{
-  outline:2px solid var(--accent); box-shadow:0 0 10px rgba(80,200,120,.55);
-}
-.sidebar .settings{margin-top:auto}
+.topbar button:active{ transform:translateY(1px); }
 
-/* パレット（設定） */
-.palette{position:absolute; left:84px; top:80px; width:320px; background:#0e1424; border:1px solid #22304e;
-  border-radius:16px; padding:14px; box-shadow:0 10px 30px rgba(0,0,0,.35); z-index:25}
-.palette__title{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-weight:700}
-.palette label{display:grid; grid-template-columns:72px 1fr; align-items:center; gap:10px; margin:8px 0}
-.palette input[type="range"]{width:100%}
-.palette input[type="color"]{width:40px; height:28px; padding:0; border:1px solid #22304e; background:#0b1020;
-  border-radius:6px}
-.panel{display:none}
+/* ===== Canvas wrapper 縦伸び防止 ===== */
+#wrapper, #wrap{height:100%}
 
-/* 上部のシンプルボタン */
-.page-ops .btn{min-width:56px}
-
-/* 印刷用 */
-@media print{
-  .topbar, .sidebar, .palette{display:none !important}
-  #wrap{grid-template-columns:1fr}
+/* ===== Sidebar (左ツールバー) ===== */
+#sidebar, .sidebar{
+  position:relative;
+  width:68px;             /* ← 基本幅 */
+  padding:10px 6px;
+  border-right:1px solid var(--muted);
+  display:flex; flex-direction:column; gap:10px;
+  background:rgba(255,255,255,.02);
 }
-/* === toolbar fixes v0.6.9-fix2 === */
-:root{
-  --tool-btn: 42px;         /* ボタン枠サイズ */
-  --icon-size: 22px;        /* アイコンサイズ */
-  --active-glow: 0 0 0 3px rgba(132,240,201,.9);
-}
-
-/* 共通サイズ */
-.sidebar .tool,
-.sidebar .toggle-btn{
-  width:var(--tool-btn);
-  height:var(--tool-btn);
-}
-
-/* アイコンサイズ */
-.sidebar .tool svg,
-.sidebar .toggle-btn svg{
-  width:var(--icon-size);
-  height:var(--icon-size);
-}
-
-/* アクティブは「ツールのみ」 */
-.sidebar .tool.active{
-  outline:2px solid #84f0c9;
-  box-shadow:var(--active-glow);
-  border-radius:10px;
-}
-/* トグルはアクティブ装飾なし */
-.sidebar .toggle-btn{
-  outline:none;
-  box-shadow:none;
-}
-
-/* 折り畳み時は幅をしっかり詰めてノート領域に干渉しない */
 .sidebar[data-collapsed="1"]{ width:44px; }
-.sidebar[data-collapsed="1"] .tool-label{ display:none; }
+
+/* 各ツールボタンの統一スタイル */
+.sidebar .tool, .sidebar .tool svg, .sidebar .tool img{
+  display:grid; place-items:center;
+}
+.sidebar .tool{
+  width:40px; height:40px;
+  margin:0 auto;
+  border-radius:12px;
+  background:rgba(0,0,0,.18);
+  border:1px solid var(--muted);
+  color:var(--ink);
+  cursor:pointer;
+  transition:.12s ease;
+}
+.sidebar .tool:hover{ filter:brightness(1.06) }
+.sidebar .tool:active{ transform:translateY(1px) }
+
+/* アイコン（SVG/IMG/フォント）を確実に見せる */
+.sidebar .tool svg, .sidebar .tool img{
+  width:22px; height:22px; filter:grayscale(1) brightness(1.05);
+}
+
+/* アクティブ強調（太めの緑グロー&枠） */
+.sidebar .tool.active{
+  outline:2px solid var(--accent);
+  box-shadow:
+    0 0 0 3px var(--accent-weak),
+    0 0 20px 0 rgba(85,211,138,.45);
+  color:var(--accent);
+}
+
+/* 「設定」トグル専用の細いアクティブリング（要望） */
+.sidebar .tool.is-settings.active{
+  outline:1px dashed var(--accent);
+  box-shadow:0 0 0 2px var(--accent-weak);
+}
+
+/* ===== 折り畳み（△▽）ボタン ===== */
+.sidebar .collapse-toggle{
+  position:absolute; top:8px; left:6px;
+  width:32px; height:32px;
+  border-radius:10px;
+  border:1px solid var(--muted);
+  background:rgba(0,0,0,.28);
+  display:grid; place-items:center;
+  z-index:5;                /* ツールに隠れない */
+}
+.sidebar[data-collapsed="1"] .collapse-toggle{
+  left:6px;                 /* 幅が狭まっても位置は一定 */
+}
+.collapse-toggle svg{ width:18px; height:18px; }
+
+/* 折り畳み時にアイコンが欠けないよう、内側に余白を確保 */
+.sidebar{ padding-left:50px; }
+.sidebar[data-collapsed="1"]{ padding-left:50px; }
+
+/* ===== 設定パネル（各ツール固有） ===== */
+.settings-panel{
+  position:absolute;
+  left:80px; top:70px;     /* ツールの上に重ならない基準位置 */
+  width:max(280px, 28vw);
+  background:rgba(15,20,35,.98);
+  border:1px solid var(--muted);
+  border-radius:14px;
+  box-shadow:var(--shadow);
+  padding:16px;
+}
+.sidebar[data-collapsed="1"] ~ .settings-panel{
+  left:60px;               /* 畳んだ時もきれいに寄せる */
+}
+.settings-panel h3{ margin:0 0 8px; font-size:16px; }
+.settings-panel .row{ display:grid; grid-template-columns:90px 1fr; gap:10px; align-items:center; margin:8px 0; }
+.settings-panel .close-btn{
+  position:absolute; top:10px; right:10px;
+  height:28px; padding:0 10px; border-radius:9px;
+  border:1px solid var(--muted); background:rgba(255,255,255,.06); color:var(--ink);
+}
+
+/* ツール切替時の“前の設定パネルが残る”印象を軽減（フェード） */
+.settings-panel{ opacity:1; transition:opacity .12s ease; }
+.settings-panel[hidden]{ opacity:0; pointer-events:none; }
+
+/* ===== キャンバス領域 ===== */
+.canvas-area{
+  position:relative;
+  height:100%;
+}
+canvas{ display:block; width:100%; height:100%; }
+
+/* ===== 細かい揃え（上部PNG/共有の上下ズレ対策） ===== */
+.topbar .btn, .topbar button{ line-height:30px; vertical-align:middle; }
