@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Note Link mini</title>
-<link rel="stylesheet" href="note-link-ui.css?v=0.6.9-fix3">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Note Link mini</title>
+  <link rel="stylesheet" href="note-link-ui.css?v=0.6.9-fix4">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">Note Link <span id="ver">v0.6.9-fix3 / No.13</span></div>
+    <div class="brand">Note Link <span id="ver">v0.6.9-fix4 / No.13</span></div>
     <div class="actions">
       <button id="btnPrint" class="btn">印刷</button>
       <button id="btnPng" class="btn">PNG</button>
@@ -18,41 +18,44 @@
 
   <div id="wrap">
     <aside id="sidebar" data-collapsed="0">
-      <!-- 折りたたみ -->
-      <button class="tool-btn ghost" id="btnCollapse" title="折りたたみ"><span class="arr" aria-hidden="true">▲</span></button>
+      <!-- 折りたたみ（常時表示） -->
+      <button class="tool-btn ghost" id="btnCollapse" title="ツールバーを折りたたむ/開く">
+        <span class="arr">◀</span>
+      </button>
 
-      <!-- ツール群 -->
-      <button class="tool-btn" data-tool="pen" title="ペン" id="tool-pen" aria-pressed="false">
+      <!-- ツール -->
+      <button class="tool-btn" data-tool="pen" id="tool-pen" title="ペン">
         <svg viewBox="0 0 24 24"><path d="M4 20l5-1 10-10-4-4L5 15 4 20zM14 6l4 4"/></svg>
       </button>
 
-      <button class="tool-btn" data-tool="marker" title="蛍光ペン" id="tool-marker" aria-pressed="false">
+      <button class="tool-btn" data-tool="marker" id="tool-marker" title="蛍光ペン">
         <svg viewBox="0 0 24 24"><path d="M3 17l4 4 4-4 7-7-4-4-7 7-4 4zM7 21l2-2"/></svg>
       </button>
 
-      <button class="tool-btn" data-tool="eraser" title="消しゴム" id="tool-eraser" aria-pressed="false">
+      <button class="tool-btn" data-tool="eraser" id="tool-eraser" title="消しゴム">
         <svg viewBox="0 0 24 24"><path d="M3 16l6 5h5l7-7-8-8-10 10zM9 21h5"/></svg>
       </button>
 
-      <button class="tool-btn" data-tool="hand" title="移動" id="tool-hand" aria-pressed="false">
+      <button class="tool-btn" data-tool="hand" id="tool-hand" title="移動（ドラッグ）">
         <svg viewBox="0 0 24 24"><path d="M6 11v2a6 6 0 0012 0v-4M6 11V7a2 2 0 014 0v4M10 7a2 2 0 114 0v4M14 7a2 2 0 114 0v4"/></svg>
       </button>
 
-      <button class="tool-btn" data-tool="text" title="テキスト" id="tool-text" aria-pressed="false">
+      <button class="tool-btn" data-tool="text" id="tool-text" title="テキスト">
         <svg viewBox="0 0 24 24"><path d="M4 6h16M8 6v12M16 6v12"/></svg>
       </button>
 
-      <!-- 一番下：設定（開いている間は細い緑枠） -->
       <div class="fill"></div>
-      <button class="tool-btn gear" id="btnSettings" title="ツール設定">
+
+      <!-- 設定（最下段） -->
+      <button class="tool-btn gear" id="btnSettings" title="選択ツールの設定">
         <svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zm8 4l2-1-2-4-2 1a7.7 7.7 0 00-2-1l-1-2H9l-1 2a7.7 7.7 0 00-2 1L4 7 2 11l2 1a7.7 7.7 0 000 2l-2 1 2 4 2-1a7.7 7.7 0 002 1l1 2h6l1-2a7.7 7.7 0 002-1l2 1 2-4-2-1a7.7 7.7 0 000-2z"/></svg>
       </button>
     </aside>
 
-    <main id="stage">
+    <main id="stage" tabindex="-1">
       <canvas id="canvas"></canvas>
 
-      <!-- 設定パネル（選択ツールに応じて中身を切替） -->
+      <!-- 設定パネル -->
       <div id="settingsPanel" hidden>
         <div class="panel-head">
           <div id="panelTitle">設定</div>
@@ -88,7 +91,7 @@
             <button id="btnAddText" class="btn">テキストを追加</button>
           </div>
 
-          <!-- 移動（説明のみ） -->
+          <!-- 移動 -->
           <div class="pane" data-for="hand" hidden>
             <p class="hint">ドラッグで画面移動、ダブルクリックで原点へ。</p>
           </div>
@@ -98,79 +101,76 @@
   </div>
 
 <script>
-/* ====== 基本 ====== */
-const appVersion = 'v0.6.9-fix3';
+/* ====== バージョン表示 ====== */
+const appVersion = 'v0.6.9-fix4';
 document.getElementById('ver').textContent = appVersion + ' / No.13';
 
-const $ = sel => document.querySelector(sel);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
 
-/* ====== レイアウト ====== */
-const sidebar = $('#sidebar');
-const btnCollapse = $('#btnCollapse');
-btnCollapse.addEventListener('click', () => {
-  const now = sidebar.getAttribute('data-collapsed') === '1';
-  sidebar.setAttribute('data-collapsed', now ? '0' : '1');
-  btnCollapse.querySelector('.arr').textContent = now ? '▲' : '▼';
+/* ====== 折りたたみ ====== */
+const wrap      = $('#wrap');
+const sidebar   = $('#sidebar');
+const collapse  = $('#btnCollapse');
+
+function applySidebar(collapsed){
+  sidebar.setAttribute('data-collapsed', collapsed ? '1' : '0');
+  document.documentElement.style.setProperty('--sbw', collapsed ? '16px' : '56px');
+  collapse.querySelector('.arr').textContent = collapsed ? '▶' : '◀';
+}
+collapse.addEventListener('click', ()=>{
+  const c = sidebar.getAttribute('data-collapsed') === '1';
+  applySidebar(!c);
 });
+applySidebar(false); // 初期は開く
 
 /* ====== Canvas ====== */
 const canvas = $('#canvas');
 const ctx = canvas.getContext('2d');
-const bg = '#0b1020';
-function resize() {
+const BG = '#0b1020';
+
+function fitCanvas(){
   const r = window.devicePixelRatio || 1;
   canvas.width  = Math.floor(canvas.clientWidth  * r);
   canvas.height = Math.floor(canvas.clientHeight * r);
   ctx.setTransform(r,0,0,r,0,0);
-  // 背景
-  ctx.fillStyle = bg;
-  ctx.fillRect(0,0,canvas.width, canvas.height);
-  // 描画レイヤーは保持済（単層運用）
+  ctx.fillStyle = BG; ctx.fillRect(0,0,canvas.width,canvas.height);
 }
-new ResizeObserver(resize).observe(canvas);
-setTimeout(resize, 0);
+new ResizeObserver(fitCanvas).observe(canvas);
+setTimeout(fitCanvas,0);
 
 /* ====== ツール管理 ====== */
 let tool = 'pen';
-const toolButtons = $$('#sidebar .tool-btn[data-tool]');
-function setTool(next) {
-  tool = next;
-  toolButtons.forEach(b=>{
-    const on = b.dataset.tool===tool;
+const toolBtns = $$('#sidebar .tool-btn[data-tool]');
+function setTool(t){
+  tool = t;
+  toolBtns.forEach(b=>{
+    const on = b.dataset.tool === t;
     b.classList.toggle('active', on);
-    b.setAttribute('aria-pressed', on?'true':'false');
+    b.setAttribute('aria-pressed', on ? 'true':'false');
   });
-  // 設定パネルが開いていれば中身を切替
-  if (!settingsPanel.hidden) showPanelFor(tool);
+  if (!settingsPanel.hidden) showPanelFor(t);
 }
-toolButtons.forEach(b=>b.addEventListener('click', ()=>setTool(b.dataset.tool)));
-
-setTool('pen'); // 初期
+toolBtns.forEach(b=>b.addEventListener('click', ()=>setTool(b.dataset.tool)));
+setTool('pen');
 
 /* ====== 設定パネル ====== */
-const settingsBtn = $('#btnSettings');
+const settingsBtn   = $('#btnSettings');
 const settingsPanel = $('#settingsPanel');
-const panelClose = $('#panelClose');
+const panelClose    = $('#panelClose');
 
 function showPanelFor(which){
   $('#panelTitle').textContent =
     {pen:'ペン設定', marker:'蛍光ペン設定', eraser:'消しゴム設定', text:'テキスト設定', hand:'移動'}[which] || '設定';
-  $$('#panelBody .pane').forEach(p=>{
-    p.hidden = p.dataset.for !== which;
-  });
-  settingsBtn.classList.toggle('settings-on', true);
+  $$('#panelBody .pane').forEach(p=>p.hidden = (p.dataset.for !== which));
 }
 settingsBtn.addEventListener('click', ()=>{
-  if (settingsPanel.hidden){ showPanelFor(tool); settingsPanel.hidden=false; }
-  else { settingsPanel.hidden=true; settingsBtn.classList.remove('settings-on'); }
+  if (settingsPanel.hidden){ showPanelFor(tool); settingsPanel.hidden = false; settingsBtn.classList.add('settings-on'); }
+  else { settingsPanel.hidden = true; settingsBtn.classList.remove('settings-on'); }
 });
-panelClose.addEventListener('click', ()=>{ settingsPanel.hidden=true; settingsBtn.classList.remove('settings-on'); });
+panelClose.addEventListener('click', ()=>{ settingsPanel.hidden = true; settingsBtn.classList.remove('settings-on'); });
 
-/* ====== 描画（ペン/マーカー/消しゴム/テキスト/移動） ====== */
-let drawing=false, last=null, snapShift=false;
-let pan={x:0,y:0}, startPan=null;
-
+/* ====== パラメータ ====== */
 const state = {
   pen:    { color:'#66ffcc', size:3,  alpha:1 },
   marker: { color:'#00ff88', size:16, alpha:0.35 },
@@ -187,9 +187,8 @@ $('#mkAlpha').addEventListener('input', e=>state.marker.alpha=+e.target.value);
 
 $('#erSize').addEventListener('input', e=>state.eraser.size=+e.target.value);
 $('#btnClearAll').addEventListener('click', ()=>{
-  ctx.save();
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.fillStyle=bg; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle = BG; ctx.fillRect(0,0,canvas.width,canvas.height);
   ctx.restore();
 });
 
@@ -200,101 +199,69 @@ $('#btnAddText').addEventListener('click', ()=>{
   ctx.save();
   ctx.fillStyle='#dfe7ef';
   ctx.font = `${state.text.size}px system-ui, -apple-system, Segoe UI, Roboto, Meiryo, sans-serif`;
-  ctx.fillText(s, 80+pan.x, 120+pan.y);
+  ctx.fillText(s, 80, 120);
   ctx.restore();
 });
 
+/* ====== 描画ロジック ====== */
+let drawing=false, last=null;
 function snap(dx,dy){
-  // 直線スナップ（15度刻み）
-  const ang = Math.atan2(dy,dx); // -pi..pi
+  const ang = Math.atan2(dy,dx);
   const step = Math.PI/12; // 15°
   const a = Math.round(ang/step)*step;
   const len = Math.hypot(dx,dy);
-  return {dx: Math.cos(a)*len, dy: Math.sin(a)*len};
+  return {dx:Math.cos(a)*len, dy:Math.sin(a)*len};
 }
 
 canvas.addEventListener('pointerdown', e=>{
   canvas.setPointerCapture(e.pointerId);
-  if (tool==='hand'){
-    startPan = {x:e.clientX - pan.x, y:e.clientY - pan.y};
-    return;
-  }
-  drawing=true;
-  last = {x:e.offsetX, y:e.offsetY};
+  drawing=true; last={x:e.offsetX,y:e.offsetY};
 });
 
 canvas.addEventListener('pointermove', e=>{
-  if (tool==='hand' && startPan){
-    pan.x = e.clientX - startPan.x;
-    pan.y = e.clientY - startPan.y;
-    ctx.translate(0,0); // no-op
-    return;
-  }
   if (!drawing) return;
-  const x = e.offsetX, y = e.offsetY;
-  let dx = x-last.x, dy = y-last.y;
+  let x=e.offsetX, y=e.offsetY;
+  let dx=x-last.x, dy=y-last.y;
 
   ctx.save();
-  ctx.translate(pan.x, pan.y);
-
-  if (e.shiftKey){ const s = snap(dx,dy); dx=s.dx; dy=s.dy; }
+  if (e.shiftKey){ const s=snap(dx,dy); dx=s.dx; dy=s.dy; }
 
   if (tool==='pen' || tool==='marker'){
     const st = state[tool];
     ctx.globalAlpha = st.alpha;
     ctx.strokeStyle = st.color;
-    ctx.lineWidth = st.size;
+    ctx.lineWidth   = st.size;
     ctx.lineCap='round'; ctx.lineJoin='round';
-    ctx.beginPath();
-    ctx.moveTo(last.x, last.y);
-    ctx.lineTo(last.x+dx, last.y+dy);
-    ctx.stroke();
-    ctx.globalAlpha=1;
-  } else if (tool==='eraser'){
+    ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(last.x+dx,last.y+dy); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }else if(tool==='eraser'){
     ctx.globalCompositeOperation='destination-out';
-    ctx.beginPath();
-    ctx.arc(x, y, state.eraser.size/2, 0, Math.PI*2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,state.eraser.size/2,0,Math.PI*2); ctx.fill();
     ctx.globalCompositeOperation='source-over';
   }
   ctx.restore();
   last={x:last.x+dx, y:last.y+dy};
 });
 
-canvas.addEventListener('pointerup', ()=>{ drawing=false; startPan=null; });
-canvas.addEventListener('dblclick', ()=>{ if(tool==='hand'){ pan={x:0,y:0}; }});
+canvas.addEventListener('pointerup', ()=>{ drawing=false; });
 
 /* ====== 上部ボタン ====== */
 $('#btnPrint').addEventListener('click', ()=>window.print());
 
 $('#btnPng').addEventListener('click', ()=>{
-  // 背景込みでPNG保存
-  const out = document.createElement('canvas');
-  out.width = canvas.width; out.height = canvas.height;
-  const octx = out.getContext('2d');
-  octx.fillStyle = bg; octx.fillRect(0,0,out.width,out.height);
-  octx.drawImage(canvas, 0,0);
-  const a = document.createElement('a');
-  a.href = out.toDataURL('image/png');
-  a.download = `note-${Date.now()}.png`;
-  a.click();
+  const out=document.createElement('canvas'); out.width=canvas.width; out.height=canvas.height;
+  const o=out.getContext('2d'); o.fillStyle=BG; o.fillRect(0,0,out.width,out.height); o.drawImage(canvas,0,0);
+  const a=document.createElement('a'); a.href=out.toDataURL('image/png'); a.download=`note-${Date.now()}.png`; a.click();
 });
 
 $('#btnShare').addEventListener('click', async ()=>{
   const url = location.origin + location.pathname + '?v=' + encodeURIComponent(appVersion) + '&cb=' + Date.now();
   try{
-    if (navigator.share){
-      await navigator.share({title:'Note Link', text:'Note Link を共有', url});
-    }else if (navigator.clipboard){
-      await navigator.clipboard.writeText(url);
-      alert('URLをクリップボードにコピーしました');
-    }else{
-      prompt('このURLをコピーしてください', url);
-    }
+    if (navigator.share) await navigator.share({title:'Note Link', text:'Note Link を共有', url});
+    else if (navigator.clipboard){ await navigator.clipboard.writeText(url); alert('URLをコピーしました'); }
+    else { prompt('このURLをコピーしてください', url); }
   }catch(e){}
 });
-
-/* 初期：設定パネルは閉じたまま、ツールはペン */
 </script>
 </body>
 </html>
