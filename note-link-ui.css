@@ -1,81 +1,80 @@
 /* Note Link UI stylesheet
-   version: v0.6.9-fix6 / No.13
-   change: 折りたたみ＝上方向 / 畳み時は▽フローティングのみ表示（ノートに干渉しない）
+   version: v0.6.9-fix7 / No.13
+   change:
+   - ツールバー真っ黒
+   - 上部バーを目立つ青
+   - 設定パネルは固定位置＆高Zで必ず見える
 */
 :root{
   --ink:#e5e7eb;
   --bg:#0b1020;
-  --muted:#272a34;
+  --muted:#2a2f3a;
   --accent:#59c878;
   --accent-weak:#52d19a;
   --shadow:0 0 1px rgba(0,0,0,.2), 0 6px 18px rgba(0,0,0,.35);
-  --sbw:56px; /* JSで 56px <-> 0px に切替 */
+  --topbar-bg:#0a58ff;  /* 目立つ青 */
+  --sbw:56px;           /* JSで 56px <-> 0px 切替 */
 }
 
 html,body{height:100%}
 html{background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif}
 *,*:before,*:after{box-sizing:border-box}
 
+/* ===== Top bar ===== */
 .topbar{
   height:44px; display:flex; align-items:center; justify-content:space-between;
-  padding:0 10px; border-bottom:1px solid var(--muted);
-  background:rgba(20,24,39,.85); position:sticky; top:0; z-index:20;
-  backdrop-filter:saturate(140%) blur(4px);
+  padding:0 10px; border-bottom:1px solid rgba(255,255,255,.18);
+  background:var(--topbar-bg); color:#fff; position:sticky; top:0; z-index:20;
+  box-shadow:0 2px 12px rgba(10,88,255,.35);
 }
-.topbar .brand{font-weight:600}
+.topbar .brand{font-weight:700}
 .actions{display:flex; gap:8px}
-.btn{height:28px; padding:0 10px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid var(--muted); color:var(--ink); cursor:pointer}
+.btn{height:28px; padding:0 10px; border-radius:10px; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; cursor:pointer}
 .btn.small{height:24px; padding:0 8px}
-.btn.danger{border-color:#e35; color:#f6c; background:rgba(227,53,83,.1)}
+.btn.danger{border-color:#e35; color:#ffd1dc; background:rgba(227,53,83,.18)}
 .btn:active{transform:translateY(1px)}
 
+/* ===== Layout ===== */
 #wrap{display:grid; grid-template-columns: var(--sbw) 1fr; height:calc(100% - 44px)}
 
-/* Sidebar（展開時のみ幅をとる。畳み時は0幅＆非表示） */
+/* ===== Sidebar（黒） ===== */
 #sidebar{
-  padding:8px 6px; border-right:1px solid var(--muted);
-  background:rgba(20,24,39,.92); display:flex; flex-direction:column; gap:8px;
-  overflow:hidden;
+  padding:8px 6px; border-right:1px solid #000;
+  background:#000; display:flex; flex-direction:column; gap:8px; overflow:hidden;
 }
-#sidebar[data-collapsed="1"]{
-  padding:0; border-right:0;
-}
+#sidebar[data-collapsed="1"]{ padding:0; border-right:0; }
 #sidebar .fill{flex:1 1 auto}
 
 .tool-btn{
   width:44px; height:44px; display:grid; place-items:center;
-  border:1px solid var(--muted); border-radius:10px;
-  background:rgba(255,255,255,.03);
-  color:var(--ink); cursor:pointer; outline:none;
+  border:1px solid #1a1a1a; border-radius:10px;
+  background:#0e0e0e; color:var(--ink); cursor:pointer; outline:none;
 }
 .tool-btn svg{width:22px; height:22px; stroke:var(--ink); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
 .tool-btn.ghost{background:transparent}
 .tool-btn.fold{height:32px}
 .tool-btn.active{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent), var(--shadow)}
-.tool-btn.settings-on, .tool-btn.gear.settings-on{outline:2px solid var(--accent-weak); outline-offset:1px}
+.tool-btn.gear.settings-on{outline:2px solid var(--accent-weak); outline-offset:1px}
 
-/* 畳み時は中の要素をまとめて非表示（幅0） */
+/* 畳み時：中身を非表示（幅0） */
 #sidebar[data-collapsed="1"] > *:not(.fold){display:none}
 
-/* Stage / canvas */
+/* ===== Stage / Canvas ===== */
 #stage{position:relative; overflow:hidden}
 #canvas{width:100%; height:100%; display:block; background:var(--bg)}
 
-/* ▽のフローティング（畳み時のみ表示） */
+/* 畳み時だけ出る“▽” */
 .collapse-fab{
-  position:absolute; left:8px; top:8px; z-index:60;
-  width:28px; height:28px; border-radius:8px; border:1px solid var(--muted);
-  background:rgba(255,255,255,.06); color:var(--ink); cursor:pointer;
+  position:absolute; left:8px; top:8px; z-index:1000;
+  width:28px; height:28px; border-radius:8px; border:1px solid rgba(255,255,255,.25);
+  background:rgba(0,0,0,.55); color:#fff; cursor:pointer;
 }
 
-/* 設定パネル（最前面＆確実に表示） */
+/* ===== 設定パネル（固定位置 & 高Z） ===== */
 #settingsPanel{
-  position:absolute; left:calc(var(--sbw) + 12px); top:68px; width:320px; padding:12px;
-  border:1px solid var(--muted); border-radius:12px; background:rgba(22,26,38,.98);
-  box-shadow:var(--shadow); z-index:100;
-}
-#sidebar[data-collapsed="1"] ~ #stage #settingsPanel{
-  left:12px; /* 畳み時はキャンバス左端から */
+  position:fixed; left:16px; top:72px; width:340px; padding:12px;
+  border:1px solid rgba(255,255,255,.2); border-radius:12px; background:rgba(12,14,22,.98);
+  box-shadow:var(--shadow); z-index:2000;
 }
 #settingsPanel .panel-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
 #settingsPanel #panelTitle{font-weight:700}
@@ -86,6 +85,5 @@ html{background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system
 .hint{opacity:.7; font-size:12px}
 
 @media (max-width:720px){
-  #settingsPanel{left:calc(var(--sbw) + 6px); width:280px}
-  #sidebar[data-collapsed="1"] ~ #stage #settingsPanel{left:8px}
+  #settingsPanel{left:12px; width:300px}
 }
