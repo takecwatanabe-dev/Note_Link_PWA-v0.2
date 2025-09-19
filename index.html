@@ -20,7 +20,7 @@
     <!-- 左ツールバー -->
     <aside id="sidebar" data-collapsed="0" aria-label="ツールバー">
       <!-- 上に畳む -->
-      <button class="tool-btn ghost fold" id="btnCollapseUp" title="ツールバーを折りたたむ（上）」 aria-expanded="true">▲</button>
+      <button class="tool-btn ghost fold" id="btnCollapseUp" title="ツールバーを折りたたむ（上）」 aria-expanded="true">△</button>
 
       <button class="tool-btn" data-tool="pen" id="tool-pen" title="ペン">
         <svg viewBox="0 0 24 24"><path d="M4 20l5-1 10-10-4-4L5 15 4 20zM14 6l4 4"/></svg>
@@ -98,7 +98,7 @@ const $$ = s => Array.from(document.querySelectorAll(s));
 
 /* ===== 折りたたみ（上へ） ===== */
 const sidebar = $('#sidebar');
-const btnUp   = $('#btnCollapseUp');   // ▲
+const btnUp   = $('#btnCollapseUp');   // △
 const btnDown = $('#btnExpandDown');   // ▽
 function applySidebar(collapsed){
   sidebar.setAttribute('data-collapsed', collapsed ? '1':'0');
@@ -247,3 +247,4 @@ $('#btnShare').addEventListener('click', async ()=>{
 </script>
 </body>
 </html>
+
