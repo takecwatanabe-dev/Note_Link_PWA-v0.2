@@ -1,15 +1,15 @@
 /* Note Link UI stylesheet
-   version: v0.6.9-fix3 / No.13
-   purpose: toolbar sizing, collapse arrow, active glow, layout fixes
-   author: ChatGPT
+   version: v0.6.9-fix4 / No.13
+   purpose: reliable collapse, settings z-index, toolbar polish
 */
 :root{
-  --ink:#e5e7eb;         /* 文字・アイコン */
-  --bg:#0b1020;          /* 背景 */
-  --muted:#272a34;       /* 枠・静的要素 */
-  --accent:#59c878;      /* アクティブの緑 */
-  --accent-weak:#52d19a; /* 設定ONの細枠用 */
+  --ink:#e5e7eb;
+  --bg:#0b1020;
+  --muted:#272a34;
+  --accent:#59c878;
+  --accent-weak:#52d19a;
   --shadow:0 0 1px rgba(0,0,0,.2), 0 6px 18px rgba(0,0,0,.35);
+  --sbw:56px; /* sidebar width (jsで切替) */
 }
 
 html,body{height:100%}
@@ -19,29 +19,24 @@ html{background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system
 .topbar{
   height:44px; display:flex; align-items:center; justify-content:space-between;
   padding:0 10px; border-bottom:1px solid var(--muted);
-  background:rgba(20,24,39,.85); position:sticky; top:0; z-index:10;
+  background:rgba(20,24,39,.85); position:sticky; top:0; z-index:20;
   backdrop-filter:saturate(140%) blur(4px);
 }
 .topbar .brand{font-weight:600}
-.topbar .actions{display:flex; gap:8px}
-.btn{
-  height:28px; padding:0 10px; border-radius:10px; background:rgba(255,255,255,.05);
-  border:1px solid var(--muted); color:var(--ink); cursor:pointer;
-}
+.actions{display:flex; gap:8px}
+.btn{height:28px; padding:0 10px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid var(--muted); color:var(--ink); cursor:pointer}
 .btn.small{height:24px; padding:0 8px}
 .btn.danger{border-color:#e35; color:#f6c; background:rgba(227,53,83,.1)}
 .btn:active{transform:translateY(1px)}
 
-#wrap{display:grid; grid-template-columns: 56px 1fr; height:calc(100% - 44px)}
+#wrap{display:grid; grid-template-columns: var(--sbw) 1fr; height:calc(100% - 44px)}
+
+/* Sidebar */
 #sidebar{
   padding:8px 6px; border-right:1px solid var(--muted);
-  background:rgba(20,24,39,.92); display:flex; flex-direction:column; gap:8px; position:relative;
+  background:rgba(20,24,39,.92); display:flex; flex-direction:column; gap:8px;
 }
 #sidebar .fill{flex:1 1 auto}
-
-/* 折りたたみ幅 */
-#sidebar[data-collapsed="1"]{ width:56px; }
-#sidebar[data-collapsed="0"]{ width:56px; } /* どちらも幅を変えない＝上下に余白確保して重なり防止 */
 
 .tool-btn{
   width:44px; height:44px; display:grid; place-items:center;
@@ -50,30 +45,25 @@ html{background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system
 }
 .tool-btn svg{width:22px; height:22px; stroke:var(--ink); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
 .tool-btn.ghost{background:transparent}
-.tool-btn .arr{font-size:13px; line-height:1;}
+.tool-btn .arr{font-size:14px}
 
-/* アクティブ：太めの緑グロー */
-.tool-btn.active{
-  border-color:var(--accent);
-  box-shadow:0 0 0 2px var(--accent), var(--shadow);
-}
+/* active glow */
+.tool-btn.active{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent), var(--shadow)}
+/* settings on (細い緑枠) */
+.tool-btn.settings-on, .tool-btn.gear.settings-on{outline:2px solid var(--accent-weak); outline-offset:1px}
 
-/* 設定ON：細い緑枠 */
-.tool-btn.settings-on,
-.tool-btn.gear.settings-on{
-  outline:2px solid var(--accent-weak);
-  outline-offset:1px;
-}
+/* 折りたたみ時：collapse以外は非表示（半欠け対策） */
+#sidebar[data-collapsed="1"] .tool-btn:not(#btnCollapse){display:none}
 
-/* ステージ */
+/* Stage / canvas */
 #stage{position:relative; overflow:hidden}
 #canvas{width:100%; height:100%; display:block; background:var(--bg)}
 
-/* 設定パネル */
+/* 設定パネル（最前面） */
 #settingsPanel{
-  position:absolute; left:68px; top:68px; width:320px; padding:12px;
-  border:1px solid var(--muted); border-radius:12px; background:rgba(22,26,38,.96);
-  box-shadow: var(--shadow);
+  position:absolute; left:calc(var(--sbw) + 12px); top:68px; width:320px; padding:12px;
+  border:1px solid var(--muted); border-radius:12px; background:rgba(22,26,38,.98);
+  box-shadow:var(--shadow); z-index:50;
 }
 #settingsPanel .panel-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
 #settingsPanel #panelTitle{font-weight:700}
@@ -83,7 +73,6 @@ html{background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system
 #settingsPanel input[type="range"]{flex:1}
 .hint{opacity:.7; font-size:12px}
 
-/* 小さめ画面 */
 @media (max-width:720px){
-  #settingsPanel{left:56px; top:56px; width:280px}
+  #settingsPanel{left:calc(var(--sbw) + 6px); width:280px}
 }
