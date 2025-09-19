@@ -4,11 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Note Link mini</title>
-  <link rel="stylesheet" href="note-link-ui.css?v=0.6.9-fix6">
+  <link rel="stylesheet" href="note-link-ui.css?v=0.6.9-fix7">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">Note Link <span id="ver">v0.6.9-fix6 / No.13</span></div>
+    <div class="brand">Note Link <span id="ver">v0.6.9-fix7 / No.13</span></div>
     <div class="actions">
       <button id="btnPrint" class="btn">印刷</button>
       <button id="btnPng" class="btn">PNG</button>
@@ -17,10 +17,10 @@
   </header>
 
   <div id="wrap">
-    <!-- 左のツールバー -->
+    <!-- 左ツールバー -->
     <aside id="sidebar" data-collapsed="0" aria-label="ツールバー">
-      <!-- 上方向に畳むボタン（▲） -->
-      <button class="tool-btn ghost fold" id="btnCollapseUp" title="ツールバーを折りたたむ（上）" aria-expanded="true">▲</button>
+      <!-- 上に畳む -->
+      <button class="tool-btn ghost fold" id="btnCollapseUp" title="ツールバーを折りたたむ（上）」 aria-expanded="true">▲</button>
 
       <button class="tool-btn" data-tool="pen" id="tool-pen" title="ペン">
         <svg viewBox="0 0 24 24"><path d="M4 20l5-1 10-10-4-4L5 15 4 20zM14 6l4 4"/></svg>
@@ -40,18 +40,18 @@
 
       <div class="fill"></div>
 
-      <button class="tool-btn gear" id="btnSettings" title="選択ツールの設定" aria-controls="settingsPanel">
+      <button class="tool-btn gear" id="btnSettings" title="選択ツールの設定（S キーでも開閉）" aria-controls="settingsPanel">
         <svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zm8 4l2-1-2-4-2 1a7.7 7.7 0 00-2-1l-1-2H9l-1 2a7.7 7.7 0 00-2 1L4 7 2 11l2 1a7.7 7.7 0 000 2l-2 1 2 4 2-1a7.7 7.7 0 002 1l1 2h6l1-2a7.7 7.7 0 002-1l2 1 2-4-2-1a7.7 7.7 0 000-2z"/></svg>
       </button>
     </aside>
 
     <main id="stage" tabindex="-1">
-      <!-- 畳んだ時だけ出る“▽”のフローティングボタン（ノートを狭めない） -->
+      <!-- 畳み時だけ出る“▽”（ノートを狭めない） -->
       <button id="btnExpandDown" class="collapse-fab" title="ツールバーを開く（下）" hidden>▽</button>
 
       <canvas id="canvas"></canvas>
 
-      <!-- 設定パネル -->
+      <!-- 設定パネル（常に画面左上固定） -->
       <div id="settingsPanel" hidden>
         <div class="panel-head">
           <div id="panelTitle">設定</div>
@@ -91,20 +91,18 @@
   </div>
 
 <script>
-const appVersion = 'v0.6.9-fix6';
+const appVersion = 'v0.6.9-fix7';
 document.getElementById('ver').textContent = appVersion + ' / No.13';
-
 const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 
-/* ===== 折りたたみ：上に畳む（ノート領域を狭めない） ===== */
-const sidebar   = $('#sidebar');
-const btnUp     = $('#btnCollapseUp');   // ▲
-const btnDown   = $('#btnExpandDown');   // ▽（フローティング）
-
+/* ===== 折りたたみ（上へ） ===== */
+const sidebar = $('#sidebar');
+const btnUp   = $('#btnCollapseUp');   // ▲
+const btnDown = $('#btnExpandDown');   // ▽
 function applySidebar(collapsed){
-  sidebar.setAttribute('data-collapsed', collapsed ? '1' : '0');
-  document.documentElement.style.setProperty('--sbw', collapsed ? '0px' : '56px');
+  sidebar.setAttribute('data-collapsed', collapsed ? '1':'0');
+  document.documentElement.style.setProperty('--sbw', collapsed ? '0px':'56px');
   btnUp.setAttribute('aria-expanded', (!collapsed).toString());
   btnDown.hidden = !collapsed;
 }
@@ -129,41 +127,50 @@ setTimeout(fitCanvas,0);
 /* ===== ツール ===== */
 let tool = 'pen';
 const toolBtns = $$('#sidebar .tool-btn[data-tool]');
-function setTool(t){
+function setTool(t, {openPanel=false} = {}){
   tool = t;
   toolBtns.forEach(b=>{
     const on = b.dataset.tool === t;
     b.classList.toggle('active', on);
     b.setAttribute('aria-pressed', on ? 'true':'false');
   });
-  if (!settingsPanel.hidden) showPanelFor(t);
+  if (!settingsPanel.hidden || openPanel) showPanelFor(t, {forceOpen:openPanel});
 }
 toolBtns.forEach(b=>b.addEventListener('click', ()=>setTool(b.dataset.tool)));
 setTool('pen');
 
-/* ===== 設定パネル ===== */
+/* ===== 設定パネル（確実に開く） ===== */
 const settingsBtn   = $('#btnSettings');
 const settingsPanel = $('#settingsPanel');
 const panelClose    = $('#panelClose');
+let panelEverOpened = false;
 
-function showPanelFor(which){
+function showPanelFor(which, {forceOpen=false} = {}){
   $('#panelTitle').textContent =
     {pen:'ペン設定', marker:'蛍光ペン設定', eraser:'消しゴム設定', text:'テキスト設定', hand:'移動'}[which] || '設定';
   $$('#panelBody .pane').forEach(p=>p.hidden = (p.dataset.for !== which));
-}
-settingsBtn.addEventListener('click', ()=>{
-  if (settingsPanel.hidden){
-    showPanelFor(tool);
+  if (settingsPanel.hidden || forceOpen){
     settingsPanel.hidden = false;
     settingsBtn.classList.add('settings-on');
-  }else{
-    settingsPanel.hidden = true;
-    settingsBtn.classList.remove('settings-on');
+    panelEverOpened = true;
   }
+}
+settingsBtn.addEventListener('click', ()=>{
+  if (settingsPanel.hidden){ showPanelFor(tool, {forceOpen:true}); }
+  else { settingsPanel.hidden = true; settingsBtn.classList.remove('settings-on'); }
 });
 panelClose.addEventListener('click', ()=>{
-  settingsPanel.hidden = true;
-  settingsBtn.classList.remove('settings-on');
+  settingsPanel.hidden = true; settingsBtn.classList.remove('settings-on');
+});
+/* 初回、ツールを変えたら自動で開く（見失い対策） */
+toolBtns.forEach(b=>{
+  b.addEventListener('click', ()=>{
+    if (!panelEverOpened) showPanelFor(b.dataset.tool, {forceOpen:true});
+  }, {once:true});
+});
+/* Sキーで開閉 */
+window.addEventListener('keydown', (e)=>{
+  if (e.key.toLowerCase()==='s'){ e.preventDefault(); settingsBtn.click(); }
 });
 
 /* ===== パラメータ ===== */
@@ -176,22 +183,18 @@ const state = {
 $('#penColor').addEventListener('input', e=>state.pen.color=e.target.value);
 $('#penSize').addEventListener('input', e=>state.pen.size=+e.target.value);
 $('#penAlpha').addEventListener('input', e=>state.pen.alpha=+e.target.value);
-
 $('#mkColor').addEventListener('input', e=>state.marker.color=e.target.value);
 $('#mkSize').addEventListener('input', e=>state.marker.size=+e.target.value);
 $('#mkAlpha').addEventListener('input', e=>state.marker.alpha=+e.target.value);
-
 $('#erSize').addEventListener('input', e=>state.eraser.size=+e.target.value);
 $('#btnClearAll').addEventListener('click', ()=>{
   ctx.save(); ctx.setTransform(1,0,0,1,0,0);
   ctx.fillStyle = BG; ctx.fillRect(0,0,canvas.width,canvas.height);
   ctx.restore();
 });
-
 $('#txSize').addEventListener('input', e=>state.text.size=+e.target.value);
 $('#btnAddText').addEventListener('click', ()=>{
-  const s = prompt('テキストを入力');
-  if (!s) return;
+  const s = prompt('テキストを入力'); if (!s) return;
   ctx.save();
   ctx.fillStyle='#dfe7ef';
   ctx.font = `${state.text.size}px system-ui, -apple-system, Segoe UI, Roboto, Meiryo, sans-serif`;
@@ -201,17 +204,8 @@ $('#btnAddText').addEventListener('click', ()=>{
 
 /* ===== 描画 ===== */
 let drawing=false, last=null;
-function snap(dx,dy){
-  const ang = Math.atan2(dy,dx);
-  const step = Math.PI/12; // 15°
-  const a = Math.round(ang/step)*step;
-  const len = Math.hypot(dx,dy);
-  return {dx:Math.cos(a)*len, dy:Math.sin(a)*len};
-}
-canvas.addEventListener('pointerdown', e=>{
-  canvas.setPointerCapture(e.pointerId);
-  drawing=true; last={x:e.offsetX,y:e.offsetY};
-});
+function snap(dx,dy){ const a=Math.atan2(dy,dx), step=Math.PI/12, A=Math.round(a/step)*step, L=Math.hypot(dx,dy); return {dx:Math.cos(A)*L, dy:Math.sin(A)*L}; }
+canvas.addEventListener('pointerdown', e=>{ canvas.setPointerCapture(e.pointerId); drawing=true; last={x:e.offsetX,y:e.offsetY}; });
 canvas.addEventListener('pointermove', e=>{
   if (!drawing) return;
   let x=e.offsetX, y=e.offsetY, dx=x-last.x, dy=y-last.y;
