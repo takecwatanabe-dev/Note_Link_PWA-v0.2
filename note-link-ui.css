@@ -1,94 +1,101 @@
 /* Note Link UI stylesheet
-   version: v0.6.9-fix14 / No.13
-   purpose : 上部バーの色、ツールバー折り畳み（上方向）、アクティブ表示、安定した設定パネル、
-             単位表示、スマホの縦書き崩れ修正、z-index整理 */
+   version: v0.6.9-fix16 / No.13
+   - △/▽ の中抜き三角、折畳み時の自動回転（CSS）
+   - ギア白固定
+   - スマホでの縦書き強制を横書きに固定
+   - ツール選択の緑ライン、z-index整理 など */
 :root{
-  --ink:#e6fff1;        /* 文字/アイコン（自書き） */
-  --ink-dim:#96b6d9;    /* うす文字 */
-  --bg:#0b0f1a;         /* 背景（漆黒） */
-  --panel:#0f1420;      /* パネル */
+  --ink:#e6fff1;         /* 文字/アイコン（白寄り） */
+  --ink-dim:#96b6d9;     /* 補助文字 */
+  --bg:#0b0f1a;          /* 背景 */
+  --panel:#0f1420;       /* 設定パネル */
   --panel-2:#0c111b;
-  --accent:#4f7cff;     /* 青い帯（上部バー） */
+  --accent:#4f7cff;      /* 上部バー */
   --accent-weak:#2a54ff;
-  --ok:#2dd4bf;         /* 緑 */
-  --danger:#ef4444;     /* 赤 */
+  --ok:#2dd4bf;
+  --danger:#ef4444;
   --shadow:0 10px 24px rgba(0,0,0,.45);
 }
-html, body { height:100%; background:var(--bg); color:var(--ink);
-  font-family:system-ui, -apple-system, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; }
-* { box-sizing:border-box; }
-button { font:inherit; cursor:pointer; color:var(--ink); background:rgba(255,255,255,.08);
-  border:1px solid rgba(255,255,255,.18); border-radius:10px; padding:8px 10px; }
-button:hover{ transform:translateY(1px); }
+*{ box-sizing:border-box; }
+html,body{ height:100%; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif; overflow:hidden; }
 
-/* ===== 上部メインバー ===== */
+/* ===== 上部メインバー（スマホでも横書き固定） ===== */
 .topbar{
   position:sticky; top:0; left:0; right:0; height:44px; z-index:50;
   display:flex; align-items:center; gap:6px; padding:0 12px;
   background:linear-gradient(0deg, var(--accent-weak), var(--accent));
-  color:white; border-bottom:1px solid rgba(255,255,255,.15);
-  writing-mode: horizontal-tb; /* スマホ縦書き対策 */
+  color:#fff; border-bottom:1px solid rgba(255,255,255,.15);
+  writing-mode: horizontal-tb !important; -webkit-writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important; -webkit-text-orientation: mixed !important;
+}
+.topbar *{
+  writing-mode: horizontal-tb !important; -webkit-writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important; -webkit-text-orientation: mixed !important;
 }
 .topbar .brand{ font-size:12px; opacity:.85; }
 .topbar .spacer{ flex:1; }
-.topbar button{ height:28px; padding:0 10px; border-radius:10px; display:inline-flex; align-items:center; }
-.topbar button, .topbar .build-tag { background:rgba(255,255,255,.22); }
-.build-tag{ padding:0 6px; border-radius:8px; font-size:12px; }
+.topbar button{
+  height:28px; padding:0 10px; border-radius:10px;
+  background:rgba(255,255,255,.22); border:1px solid rgba(255,255,255,.22); color:#fff;
+}
+.topbar button:hover{ transform:translateY(1px); }
+.build-tag{ padding:0 6px; border-radius:8px; background:rgba(255,255,255,.22); }
 
 /* ===== ラッパー／ステージ ===== */
-#wrap{ position:relative; width:100%; height:calc(100% - 44px); } /* 44pxと同期 */
-#stage{ position:absolute; inset:0 0 0 64px; /* 左にツールバー幅を確保 */ }
-#canvas, #overlay{ width:100%; height:100%; display:block; }
+#wrap{ position:relative; width:100%; height:calc(100% - 44px); }
+#stage{ position:absolute; inset:0 0 0 64px; }
+#canvas,#overlay{ width:100%; height:100%; display:block; }
 
-/* ===== ツールバー（左） ===== */
+/* ===== サイドバー ===== */
 .sidebar{
   position:absolute; left:0; top:0; bottom:0; width:64px; padding:6px; z-index:49;
-  background:rgba(0,0,0,.82); box-shadow:var(--shadow);
+  background:#000e; box-shadow:var(--shadow);
   display:flex; flex-direction:column; align-items:center; gap:8px;
 }
-.sidebar .tool{ width:36px; height:36px; display:grid; place-items:center;
-  background:rgba(0,0,0,.2); border:1px solid rgba(255,255,255,.12); }
+.sidebar .tool{
+  width:36px; height:36px; display:grid; place-items:center;
+  background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.12); border-radius:10px;
+  color:var(--ink); cursor:pointer;
+}
 .sidebar .tool svg{ width:18px; height:18px; }
-.sidebar .tool.active{ outline:2px solid rgba(97,224,155,.85); box-shadow:0 0 0 2px rgba(0,0,0,.6) inset; color:var(--ok); }
-.sidebar .gear{ margin-top:auto; }
-.sidebar .chev{ width:18px; height:18px; }
+.sidebar .tool.active{
+  outline:2px solid rgba(97,224,155,.88);
+  box-shadow:0 0 0 2px rgba(0,0,0,.6) inset;
+  color:var(--ok);
+}
+.sidebar .gear svg{ color:#fff; }          /* ギアは白で固定 */
+.sidebar .chev{ transition:transform .18s ease; }
+.sidebar[data-collapsed="1"] .chev{ transform:rotate(180deg); } /* ▽ */
+
 .sidebar[data-collapsed="1"]{ height:45px; width:64px; }
 .sidebar[data-collapsed="1"] .tool{ display:none; }
 .sidebar[data-collapsed="1"] #btn-collapse{ display:grid; }
-.sidebar[data-collapsed="1"] + #stage{ inset:0 0 0 64px; } /* 幅は変えない：崩れ防止 */
+.sidebar[data-collapsed="1"] + #stage{ inset:0 0 0 64px; } /* 幅は同じで崩れない */
 
-/* ===== 設定パネル（共通の箱） ===== */
+/* ===== 設定パネル ===== */
 .panel{
   position:absolute; left:72px; top:56px; z-index:55; min-width:300px;
   background:rgba(12,17,27,.95); border:1px solid rgba(255,255,255,.14);
   border-radius:12px; padding:10px; box-shadow:var(--shadow);
 }
 .panel[hidden]{ display:none; }
-.panel h4{ margin:0 0 10px; font-size:14px; color:var(--ink); }
+.panel h4{ margin:0 0 10px; font-size:14px; color:var(--ink); cursor:grab; }
 .row{ display:flex; align-items:center; gap:10px; margin:10px 0; }
-.row label{ width:86px; font-size:12px; color:var(--ink-dim); }
+.row label{ width:90px; font-size:12px; color:var(--ink-dim); }
 .row input[type="range"]{ flex:1; }
 .row input[type="color"]{ width:32px; height:22px; padding:0; border:0; background:transparent; }
 .panel .seg label{ margin-right:10px; }
-.panel .danger{ background:var(--danger); color:#fff; }
+.panel .danger{ background:var(--danger); color:#fff; border:1px solid rgba(255,255,255,.18); }
+.panel .hint{ font-size:11px; color:#bcd; opacity:.8; }
 .panel .close{
-  position:absolute; right:10px; top:10px; height:26px; padding:0 10px; border-radius:8px;
-  background:rgba(255,255,255,.18);
+  position:absolute; right:10px; top:10px; height:26px; padding:0 10px;
+  border-radius:8px; background:rgba(255,255,255,.18); color:var(--ink);
 }
-.hint{ color:var(--ink-dim); font-size:12px; }
 
 /* ===== ツールチップ ===== */
 [data-tip]{ position:relative; }
 [data-tip]:hover::after{
   content:attr(data-tip); position:absolute; left:48px; top:50%;
-  transform:translateY(-50%); background:#222a; color:#fff; font-size:12px;
+  transform:translateY(-50%); background:#222c; color:#fff; font-size:12px;
   padding:4px 8px; border-radius:8px; white-space:nowrap; pointer-events:none;
 }
-
-/* ===== 強制横書き（スマホの縦書き崩れ対策） ===== */
-.topbar, .topbar button, .build-tag { writing-mode: horizontal-tb; }
-
-/* ===== スクロール余白なし（ツールバーはオーバーレイ） ===== */
-html, body { overflow:hidden; }
-/* 上部バーとぴったり：JSから --topbar-h を同期設定（44px） */
-#wrap{ padding-top:0; }
