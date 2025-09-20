@@ -1,9 +1,9 @@
-/* Note Link UI stylesheet
-   version: v0.6.9-fix8 / No.13
-   change:
-   - 折りたたみ△を大きく＆中抜き（三角枠線）
-   - 各ツール設定パネルの視認性維持
-   - ツールバー真っ黒、上部バーは目立つ青
+/* Note Link UI
+   version: v0.6.9-fix9 / No.13
+   - サイドバー幅は一定（黒）
+   - 折畳みは上のみ／△は中抜き・大きめ（畳むと▽に反転）
+   - 設定パネルは常に最前面
+   - 上部バーは目立つ青
 */
 :root{
   --ink:#e5e7eb;
@@ -13,14 +13,14 @@
   --accent-weak:#52d19a;
   --shadow:0 0 1px rgba(0,0,0,.2), 0 6px 18px rgba(0,0,0,.35);
   --topbar-bg:#0a58ff;
-  --sbw:56px; /* JSで 56px <-> 0px */
+  --sbw:60px;      /* サイドバー幅：固定 */
 }
 
 html,body{height:100%}
 html{background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif}
 *,*:before,*:after{box-sizing:border-box}
 
-/* ===== Top bar ===== */
+/* ==== Topbar ==== */
 .topbar{
   height:44px; display:flex; align-items:center; justify-content:space-between;
   padding:0 10px; border-bottom:1px solid rgba(255,255,255,.18);
@@ -34,44 +34,43 @@ html{background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system
 .btn.danger{border-color:#e35; color:#ffd1dc; background:rgba(227,53,83,.18)}
 .btn:active{transform:translateY(1px)}
 
-/* ===== Layout ===== */
+/* ==== Layout ==== */
 #wrap{display:grid; grid-template-columns: var(--sbw) 1fr; height:calc(100% - 44px)}
 
-/* ===== Sidebar（黒） ===== */
+/* ==== Sidebar（黒で固定幅） ==== */
 #sidebar{
-  padding:8px 6px; border-right:1px solid #000;
+  width:var(--sbw); padding:8px 6px; border-right:1px solid #000;
   background:#000; display:flex; flex-direction:column; gap:8px; overflow:hidden;
 }
-#sidebar[data-collapsed="1"]{ padding:0; border-right:0; }
 #sidebar .fill{flex:1 1 auto}
 
+/* 畳み：中身を非表示（幅はそのまま） */
+#sidebar[data-collapsed="1"] > .tool-btn:not(.fold),
+#sidebar[data-collapsed="1"] > .fill,
+#sidebar[data-collapsed="1"] > .gear{ display:none; }
+
+/* ==== Tool buttons ==== */
 .tool-btn{
-  width:44px; height:44px; display:grid; place-items:center;
-  border:1px solid #1a1a1a; border-radius:10px;
+  width:48px; height:48px; display:grid; place-items:center;
+  border:1px solid #1a1a1a; border-radius:12px;
   background:#0e0e0e; color:var(--ink); cursor:pointer; outline:none;
 }
-.tool-btn svg{width:22px; height:22px}
+.tool-btn svg{width:24px; height:24px}
 .tool-btn.ghost{background:transparent}
-.tool-btn.fold{height:36px}          /* △を少し大きく */
-.tool-btn.fold svg{width:26px; height:26px}
-.tool-btn.active{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent), var(--shadow)}
-.tool-btn.gear.settings-on{outline:2px solid var(--accent-weak); outline-offset:1px}
+.tool-btn.fold{height:40px}
+.tool-btn.fold svg{width:28px; height:28px; transition:transform .15s}
+#btnFold[data-dir="down"] svg{ transform:rotate(180deg); }
 
-/* 畳み時：中身を非表示（幅0） */
-#sidebar[data-collapsed="1"] > *:not(.fold){display:none}
+.tool-btn.active{
+  border-color:var(--accent);
+  box-shadow:0 0 0 2px var(--accent), var(--shadow);
+}
 
-/* ===== Stage / Canvas ===== */
+/* ==== Stage / Canvas ==== */
 #stage{position:relative; overflow:hidden}
 #canvas{width:100%; height:100%; display:block; background:var(--bg)}
 
-/* 畳み時だけ出る“▽” */
-.collapse-fab{
-  position:absolute; left:8px; top:8px; z-index:1000;
-  width:30px; height:30px; border-radius:8px; border:1px solid rgba(255,255,255,.25);
-  background:rgba(0,0,0,.55); color:#fff; cursor:pointer;
-}
-
-/* ===== 設定パネル（固定位置 & 高Z） ===== */
+/* ==== Settings panel ==== */
 #settingsPanel{
   position:fixed; left:16px; top:72px; width:340px; padding:12px;
   border:1px solid rgba(255,255,255,.2); border-radius:12px; background:rgba(12,14,22,.98);
