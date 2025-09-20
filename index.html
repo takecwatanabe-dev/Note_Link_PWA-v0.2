@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-<title>Note Link v0.6.9-fix11 / No.13 (single)</title>
+<title>Note Link v0.6.9-fix12 / No.13 (single)</title>
 
 <!-- 強制ノーキャッシュ -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -12,9 +12,8 @@
 
 <style>
 /* Note Link UI stylesheet
-   version: v0.6.9-fix11 / No.13
-   fix: Canvas が前面に被りクリック不能 → #stage の pointer-events 無効化＋z-index 固定
-        パネルは pointer-events を有効化、重なり順も明示  */
+   version: v0.6.9-fix12 / No.13
+   fix: クリック不能の根本原因を解消（親での pointer-events:none を撤去し、z-indexを厳密化） */
 
 /* ===== Theme tokens ===== */
 :root{
@@ -32,7 +31,7 @@ html,body{height:100%; background:var(--bg); color:var(--ink);
 
 /* ===== Topbar ===== */
 header.topbar{
-  position:sticky; top:0; left:0; right:0; z-index:60;
+  position:sticky; top:0; left:0; right:0; z-index:120;
   display:flex; align-items:center; gap:8px; height:44px; padding:0 12px;
   background:linear-gradient(0deg,var(--accent-weak),var(--accent));
   border-bottom:1px solid rgba(255,255,255,.15);
@@ -47,15 +46,12 @@ header.topbar .version{opacity:.8; font-size:12px}
 
 /* ===== Layout ===== */
 #wrap{position:relative; width:100%; height:calc(100% - 44px)}
-#stage{
-  position:absolute; inset:0; z-index:10;
-  /* ← Canvas 以外（パネル・ツールバー）がクリック可能になるよう透過 */
-  pointer-events:none;
-}
+/* Canvas を最下層に。これで左のツール／パネルが確実に前面 */
+#board{position:absolute; inset:0; z-index:10; width:100%; height:100%; display:block}
 
 /* ===== Sidebar ===== */
 #sidebar{
-  position:absolute; left:8px; top:64px; z-index:50;
+  position:absolute; left:8px; top:64px; z-index:100;
   width:48px; padding:6px; border-radius:12px; background:rgba(0,0,0,.92);
   display:flex; flex-direction:column; gap:6px; border:1px solid rgba(255,255,255,.1);
   box-shadow:0 0 0 1px rgba(0,0,0,.6), 0 12px 28px rgba(0,0,0,.45);
@@ -63,7 +59,7 @@ header.topbar .version{opacity:.8; font-size:12px}
 #sidebar[data-collapsed="1"]{height:45px; overflow:hidden; padding-bottom:6px}
 #sidebar .row{display:grid; place-items:center;}
 #sidebar .toggle{width:36px; height:36px; border-radius:10px; background:var(--panel); display:grid; place-items:center; cursor:pointer; color:var(--ink); font-size:18px; border:1px solid rgba(255,255,255,.15)}
-#sidebar .toggle:hover{outline:2px solid rgba(79,124,255,.35);}
+#sidebar .toggle:hover{outline:2px solid rgba(79,124,255,.35)}
 
 /* ツールボタン */
 .tool{
@@ -85,12 +81,10 @@ header.topbar .version{opacity:.8; font-size:12px}
 
 /* ===== 設定パネル ===== */
 .panel{
-  position:absolute; left:62px; top:56px; z-index:46; min-width:300px;
+  position:absolute; left:62px; top:56px; z-index:110; min-width:300px;
   background:rgba(12,17,27,.95); border:1px solid rgba(255,255,255,.14);
   border-radius:12px; padding:14px; box-shadow:var(--shadow);
   display:none;
-  /* ← #stage が pointer-events:none なので、パネル自身は有効にする */
-  pointer-events:auto;
 }
 .panel.show{display:block}
 .panel h4{margin:0 0 10px; font-size:14px}
@@ -101,24 +95,24 @@ header.topbar .version{opacity:.8; font-size:12px}
 .panel .close{position:absolute; right:10px; top:10px; height:26px; padding:0 10px; border-radius:8px;
   border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08); color:var(--ink); font-size:12px}
 
-/* ===== Canvas ===== */
-canvas{width:100%; height:100%; display:block; pointer-events:auto;} /* ← 描画は有効 */
-
-/* 折り畳み用の矢印（中抜き、少し大きめ） */
+/* 折り畳み用の矢印（中抜き・少し大きめ） */
 .arrow{font-size:18px; line-height:1; color:var(--ink)}
 </style>
 </head>
 <body>
 <header class="topbar">
-  <strong>Note Link v0.6.9-fix11 / No.13</strong>
+  <strong>Note Link v0.6.9-fix12 / No.13</strong>
   <span class="spacer"></span>
   <button class="btn" id="btnPrint">印刷</button>
   <button class="btn" id="btnPng">PNG</button>
   <button class="btn" id="btnShare">共有</button>
-  <span class="version">build: fix11</span>
+  <span class="version">build: fix12</span>
 </header>
 
 <div id="wrap">
+  <!-- Canvas を最初に置き、z-index で背面に固定 -->
+  <canvas id="board"></canvas>
+
   <aside id="sidebar" data-collapsed="0" aria-label="ツールバー">
     <div class="row">
       <button id="btnCollapse" class="toggle" data-tip="ツールバーを折りたたむ"><span class="arrow" id="arrow">△</span></button>
@@ -143,67 +137,63 @@ canvas{width:100%; height:100%; display:block; pointer-events:auto;} /* ← 描�
     </button>
   </aside>
 
-  <main id="stage">
-    <canvas id="board"></canvas>
+  <!-- 設定パネル（必要時のみ表示） -->
+  <div id="panel" class="panel" role="dialog" aria-modal="true">
+    <h4 id="panelTitle">ペン設定</h4>
+    <button class="close" id="closePanel">閉じる</button>
 
-    <!-- 設定パネル -->
-    <div id="panel" class="panel" role="dialog" aria-modal="true">
-      <h4 id="panelTitle">ペン設定</h4>
-      <button class="close" id="closePanel">閉じる</button>
-
-      <div data-for="pen" class="group">
-        <div class="row"><label>色</label><input id="penColor" type="color" value="#ffffff"></div>
-        <div class="row"><label>太さ</label><input id="penSize" type="range" min="1" max="40" value="3"></div>
-        <div class="row"><label>不透明度</label><input id="penAlpha" type="range" min="1" max="100" value="100"></div>
-        <div class="row" style="opacity:.8"><small>Shiftで直線（15°刻み）</small></div>
-      </div>
-
-      <div data-for="marker" class="group" style="display:none">
-        <div class="row"><label>色</label><input id="mkColor" type="color" value="#84f3d2"></div>
-        <div class="row"><label>太さ</label><input id="mkSize" type="range" min="6" max="80" value="18"></div>
-        <div class="row"><label>不透明度</label><input id="mkAlpha" type="range" min="10" max="80" value="35"></div>
-        <div class="row" style="opacity:.8"><small>Shiftで直線（15°刻み）</small></div>
-      </div>
-
-      <div data-for="eraser" class="group" style="display:none">
-        <div class="row"><label>消し幅</label><input id="erSize" type="range" min="6" max="120" value="32"></div>
-        <div class="row"><button id="btnClear" class="btn" style="background:rgba(255,80,80,.15); border:1px solid rgba(255,80,80,.35)">全面消去</button></div>
-      </div>
-
-      <div data-for="text" class="group" style="display:none">
-        <div class="row"><label>文字サイズ</label><input id="txSize" type="range" min="12" max="96" value="28"></div>
-        <div class="row"><button id="btnAddText" class="btn">テキストを追加</button></div>
-        <div class="row" style="opacity:.7"><small>※ 画面をドラッグで移動、ダブルクリックで既存テキストの編集</small></div>
-      </div>
+    <div data-for="pen" class="group">
+      <div class="row"><label>色</label><input id="penColor" type="color" value="#ffffff"></div>
+      <div class="row"><label>太さ</label><input id="penSize" type="range" min="1" max="40" value="3"></div>
+      <div class="row"><label>不透明度</label><input id="penAlpha" type="range" min="1" max="100" value="100"></div>
+      <div class="row" style="opacity:.8"><small>Shiftで直線（15°刻み）</small></div>
     </div>
-  </main>
+
+    <div data-for="marker" class="group" style="display:none">
+      <div class="row"><label>色</label><input id="mkColor" type="color" value="#84f3d2"></div>
+      <div class="row"><label>太さ</label><input id="mkSize" type="range" min="6" max="80" value="18"></div>
+      <div class="row"><label>不透明度</label><input id="mkAlpha" type="range" min="10" max="80" value="35"></div>
+      <div class="row" style="opacity:.8"><small>Shiftで直線（15°刻み）</small></div>
+    </div>
+
+    <div data-for="eraser" class="group" style="display:none">
+      <div class="row"><label>消し幅</label><input id="erSize" type="range" min="6" max="120" value="32"></div>
+      <div class="row"><button id="btnClear" class="btn" style="background:rgba(255,80,80,.15); border:1px solid rgba(255,80,80,.35)">全面消去</button></div>
+    </div>
+
+    <div data-for="text" class="group" style="display:none">
+      <div class="row"><label>文字サイズ</label><input id="txSize" type="range" min="12" max="96" value="28"></div>
+      <div class="row"><button id="btnAddText" class="btn">テキストを追加</button></div>
+      <div class="row" style="opacity:.7"><small>※ 画面をドラッグで移動、ダブルクリックで既存テキストの編集</small></div>
+    </div>
+  </div>
 </div>
 
 <script>
 (() => {
-  const VERSION = 'v0.6.9-fix11';
+  const VERSION = 'v0.6.9-fix12';
   document.querySelector('.version').textContent = 'build: ' + VERSION.split('-')[1];
 
-  // 旧 SW を解除（キャッシュ無効化）
+  // 旧SWは解除（念のため）
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
   }
 
-  // Canvas
+  // Canvas 基本
   const cvs = document.getElementById('board');
   const ctx = cvs.getContext('2d');
   const DPR = Math.max(1, window.devicePixelRatio || 1);
   const fit = () => {
-    const r = document.getElementById('stage').getBoundingClientRect();
+    const r = cvs.getBoundingClientRect();
     cvs.width = Math.floor(r.width * DPR);
     cvs.height = Math.floor(r.height * DPR);
-    cvs.style.width = r.width + 'px';
-    cvs.style.height = r.height + 'px';
     ctx.setTransform(DPR,0,0,DPR,0,0);
     redraw();
   };
+  // 初期レイアウト確定後にフィット
+  new ResizeObserver(fit).observe(document.getElementById('wrap'));
   window.addEventListener('resize', fit);
-  fit();
+  setTimeout(fit, 0);
 
   // 状態
   let tool = 'pen';
@@ -216,7 +206,7 @@ canvas{width:100%; height:100%; display:block; pointer-events:auto;} /* ← 描�
   const paths = [];
   let drawing = false, activePath = null;
 
-  // ツール選択 & パネル表示
+  // UI 要素
   const sidebar = document.getElementById('sidebar');
   const panel   = document.getElementById('panel');
   const panelTitle = document.getElementById('panelTitle');
@@ -237,14 +227,14 @@ canvas{width:100%; height:100%; display:block; pointer-events:auto;} /* ← 描�
   });
   document.getElementById('closePanel').addEventListener('click', ()=> showPanel(false));
 
-  // 折り畳み（上方向、▽だけ残す）
+  // 折り畳み（上方向）
   document.getElementById('btnCollapse').addEventListener('click', ()=>{
     const col = sidebar.getAttribute('data-collapsed') === '1' ? '0' : '1';
     sidebar.setAttribute('data-collapsed', col);
     arrowEl.textContent = (col==='1' ? '▽' : '△');
   });
 
-  // 設定
+  // 設定バインド
   const bindRange = (id, obj, key, scale=1) => {
     const el = document.getElementById(id);
     const apply = ()=> obj[key] = (key==='alpha') ? (+el.value/100) : Math.round(+el.value*scale)/scale;
@@ -260,7 +250,6 @@ canvas{width:100%; height:100%; display:block; pointer-events:auto;} /* ← 描�
   bindRange('mkAlpha', state.marker, 'alpha');
 
   bindRange('erSize', state.eraser, 'size');
-
   bindRange('txSize', state.text, 'size');
 
   document.getElementById('btnClear').addEventListener('click', ()=>{ paths.length=0; redraw(); });
@@ -322,11 +311,12 @@ canvas{width:100%; height:100%; display:block; pointer-events:auto;} /* ← 描�
   };
   const endPath = ()=>{ drawing=false; activePath=null; };
 
-  cvs.addEventListener('pointerdown', e=>{ const p=pos(e); startPath(p.x,p.y,e.shiftKey); });
+  cvs.addEventListener('pointerdown', e=>{ const p=pos(e); startPath(p.x,p.y,e.shiftKey); cvs.setPointerCapture?.(e.pointerId); });
   cvs.addEventListener('pointermove', e=>{ if(!drawing) return; const p=pos(e); addPoint(p.x,p.y,e.shiftKey); });
   window.addEventListener('pointerup', endPath);
 
   function redraw(){
+    // 物理サイズに合わせてクリア
     ctx.clearRect(0,0,cvs.width,cvs.height);
     for (const p of paths){
       ctx.save();
@@ -352,21 +342,21 @@ canvas{width:100%; height:100%; display:block; pointer-events:auto;} /* ← 描�
     }
   }
 
-  // テキスト
+  // テキスト（簡易）
   const mkText = (x,y, size) => {
     const d = document.createElement('div');
     d.contentEditable = true; d.textContent = 'テキスト';
     Object.assign(d.style,{
       position:'absolute', left:(x-20)+'px', top:(y-10)+'px', color:'#fff',
       fontSize:size+'px', padding:'2px 4px', outline:'1px dashed rgba(255,255,255,.25)', borderRadius:'6px',
-      cursor:'move', userSelect:'text', background:'transparent', pointerEvents:'auto', zIndex:45
+      cursor:'move', userSelect:'text', background:'transparent', zIndex:105
     });
     let dragging=false, ox=0, oy=0;
     d.addEventListener('dblclick', ()=> d.focus());
-    d.addEventListener('pointerdown', e=>{dragging=true; ox=e.clientX-parseFloat(d.style.left); oy=e.clientY-parseFloat(d.style.top); d.setPointerCapture(e.pointerId);});
+    d.addEventListener('pointerdown', e=>{dragging=true; ox=e.clientX-parseFloat(d.style.left); oy=e.clientY-parseFloat(d.style.top); d.setPointerCapture?.(e.pointerId);});
     d.addEventListener('pointermove', e=>{ if(!dragging) return; d.style.left=(e.clientX-ox)+'px'; d.style.top=(e.clientY-oy)+'px';});
     d.addEventListener('pointerup', ()=> dragging=false);
-    document.getElementById('stage').appendChild(d);
+    document.getElementById('wrap').appendChild(d);
   };
   document.getElementById('btnAddText').addEventListener('click', ()=>{
     const r = cvs.getBoundingClientRect();
