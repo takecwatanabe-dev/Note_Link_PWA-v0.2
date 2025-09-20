@@ -1,89 +1,111 @@
-/* Note Link UI
-   version: v0.6.9-fix9 / No.13
-   - サイドバー幅は一定（黒）
-   - 折畳みは上のみ／△は中抜き・大きめ（畳むと▽に反転）
-   - 設定パネルは常に最前面
-   - 上部バーは目立つ青
+<script>
+/* Note Link UI runtime
+   version: v0.6.9-fix10 / No.13
+   - 折り畳み(上方向)の安定化
+   - 各ツールごとに設定UIを切替表示
+   - 上部バー操作の配線
 */
-:root{
-  --ink:#e5e7eb;
-  --bg:#0b1020;
-  --muted:#2a2f3a;
-  --accent:#59c878;
-  --accent-weak:#52d19a;
-  --shadow:0 0 1px rgba(0,0,0,.2), 0 6px 18px rgba(0,0,0,.35);
-  --topbar-bg:#0a58ff;
-  --sbw:60px;      /* サイドバー幅：固定 */
-}
 
-html,body{height:100%}
-html{background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Meiryo",sans-serif}
-*,*:before,*:after{box-sizing:border-box}
+(() => {
+  const $  = (sel,root=document)=>root.querySelector(sel);
+  const $$ = (sel,root=document)=>[...root.querySelectorAll(sel)];
 
-/* ==== Topbar ==== */
-.topbar{
-  height:44px; display:flex; align-items:center; justify-content:space-between;
-  padding:0 10px; border-bottom:1px solid rgba(255,255,255,.18);
-  background:var(--topbar-bg); color:#fff; position:sticky; top:0; z-index:20;
-  box-shadow:0 2px 12px rgba(10,88,255,.35);
-}
-.topbar .brand{font-weight:700}
-.actions{display:flex; gap:8px}
-.btn{height:28px; padding:0 10px; border-radius:10px; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); color:#fff; cursor:pointer}
-.btn.small{height:24px; padding:0 8px}
-.btn.danger{border-color:#e35; color:#ffd1dc; background:rgba(227,53,83,.18)}
-.btn:active{transform:translateY(1px)}
+  // 基本ノード
+  const sidebar = $('#sidebar');
+  const toggle  = $('#toggle');
+  const tools = {
+    pen:    $('#tool-pen'),
+    marker: $('#tool-marker'),
+    eraser: $('#tool-eraser'),
+    text:   $('#tool-text'),
+    gear:   $('#tool-gear') // 歯車
+  };
 
-/* ==== Layout ==== */
-#wrap{display:grid; grid-template-columns: var(--sbw) 1fr; height:calc(100% - 44px)}
+  // 共通設定パネル（中身はタブ切替）
+  const panel = $('#panel');
+  const panelClose = $('#panel .close');
+  const panelTabs = {
+    pen:    $('#panel-pen'),
+    marker: $('#panel-marker'),
+    eraser: $('#panel-eraser'),
+    text:   $('#panel-text')
+  };
 
-/* ==== Sidebar（黒で固定幅） ==== */
-#sidebar{
-  width:var(--sbw); padding:8px 6px; border-right:1px solid #000;
-  background:#000; display:flex; flex-direction:column; gap:8px; overflow:hidden;
-}
-#sidebar .fill{flex:1 1 auto}
+  // ========== 折り畳み ==========
+  function setCollapsed(state){
+    if(state){
+      sidebar.setAttribute('data-collapsed','1');  // 上へ隠す
+      // トグルは常に見える（sidebarの一番上にあるため）
+      toggle.setAttribute('data-dir','down');      // ▽
+      toggle.innerHTML = arrowSVG('down');
+    }else{
+      sidebar.removeAttribute('data-collapsed');
+      toggle.setAttribute('data-dir','up');        // △
+      toggle.innerHTML = arrowSVG('up');
+    }
+  }
+  function arrowSVG(dir){
+    // 中抜き三角（塗りなし、線のみ）
+    const d = {
+      up:   'M3 12 L11 4 L19 12',
+      down: 'M3 8  L11 16 L19 8'
+    }[dir];
+    return `<svg viewBox="0 0 22 22"><path d="${d}" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+  toggle.addEventListener('click', ()=>{
+    const c = sidebar.getAttribute('data-collapsed') === '1';
+    setCollapsed(!c);
+  });
+  // 初期は開いた状態・上向き△
+  setCollapsed(false);
 
-/* 畳み：中身を非表示（幅はそのまま） */
-#sidebar[data-collapsed="1"] > .tool-btn:not(.fold),
-#sidebar[data-collapsed="1"] > .fill,
-#sidebar[data-collapsed="1"] > .gear{ display:none; }
+  // ========== ツール選択 & パネル切替 ==========
+  let active = 'pen';
+  function setActive(next){
+    // ボタンの見た目
+    Object.entries(tools).forEach(([key,el])=>{
+      if(!el) return;
+      el.classList.toggle('active', key===next);
+    });
+    active = next;
 
-/* ==== Tool buttons ==== */
-.tool-btn{
-  width:48px; height:48px; display:grid; place-items:center;
-  border:1px solid #1a1a1a; border-radius:12px;
-  background:#0e0e0e; color:var(--ink); cursor:pointer; outline:none;
-}
-.tool-btn svg{width:24px; height:24px}
-.tool-btn.ghost{background:transparent}
-.tool-btn.fold{height:40px}
-.tool-btn.fold svg{width:28px; height:28px; transition:transform .15s}
-#btnFold[data-dir="down"] svg{ transform:rotate(180deg); }
+    // 設定パネル（ギア以外で開く／ギアはトグル）
+    if(next === 'gear'){
+      panel.classList.toggle('show');
+    }else{
+      showPanel(next);
+    }
+  }
+  function showPanel(kind){
+    panel.classList.add('show');
+    Object.entries(panelTabs).forEach(([k,el])=>{
+      if(!el) return;
+      el.style.display = (k===kind)? 'block':'none';
+    });
+  }
+  Object.entries(tools).forEach(([key,el])=>{
+    if(!el) return;
+    el.addEventListener('click', ()=> setActive(key));
+  });
+  panelClose?.addEventListener('click', ()=> panel.classList.remove('show'));
 
-.tool-btn.active{
-  border-color:var(--accent);
-  box-shadow:0 0 0 2px var(--accent), var(--shadow);
-}
+  // ========== 上部バー（印刷/PNG/共有） ==========
+  $('#btn-print')?.addEventListener('click', ()=> window.print());
+  $('#btn-png')?.addEventListener('click', ()=>{
+    // ここは既存のキャンバス出力関数に合わせて差し替え
+    // 例: exportPNG()
+    if(typeof exportPNG === 'function'){ exportPNG(); }
+    else alert('PNG出力の関数が見つかりません。');
+  });
+  $('#btn-share')?.addEventListener('click', async ()=>{
+    try{
+      await navigator.share?.({ title:'Note Link', url: location.href }) ??
+        navigator.clipboard.writeText(location.href);
+      alert('URLを共有/コピーしました。');
+    }catch(e){ console.warn(e); }
+  });
 
-/* ==== Stage / Canvas ==== */
-#stage{position:relative; overflow:hidden}
-#canvas{width:100%; height:100%; display:block; background:var(--bg)}
-
-/* ==== Settings panel ==== */
-#settingsPanel{
-  position:fixed; left:16px; top:72px; width:340px; padding:12px;
-  border:1px solid rgba(255,255,255,.2); border-radius:12px; background:rgba(12,14,22,.98);
-  box-shadow:var(--shadow); z-index:2000;
-}
-#settingsPanel .panel-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
-#settingsPanel #panelTitle{font-weight:700}
-#settingsPanel .pane{display:grid; gap:10px}
-#settingsPanel label{display:flex; align-items:center; justify-content:space-between; gap:10px}
-#settingsPanel input[type="color"]{width:44px; height:24px; border:1px solid var(--muted); background:transparent; border-radius:6px}
-#settingsPanel input[type="range"]{flex:1}
-.hint{opacity:.7; font-size:12px}
-
-@media (max-width:720px){
-  #settingsPanel{left:12px; width:300px}
-}
+  // ========== 初期ツール ==========
+  setActive('pen');
+})();
+</script>
