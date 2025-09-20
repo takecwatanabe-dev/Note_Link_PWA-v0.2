@@ -1,111 +1,111 @@
-<script>
-/* Note Link UI runtime
+/* Note Link UI stylesheet
    version: v0.6.9-fix10 / No.13
-   - 折り畳み(上方向)の安定化
-   - 各ツールごとに設定UIを切替表示
-   - 上部バー操作の配線
+   purpose: 上部バーの色, ツールバー折り畳み(上方向), アクティブ表示, 安定した設定パネル
 */
 
-(() => {
-  const $  = (sel,root=document)=>root.querySelector(sel);
-  const $$ = (sel,root=document)=>[...root.querySelectorAll(sel)];
+:root{
+  --ink:#e6f1ff;
+  --ink-dim:#9db6d9;
+  --bg:#0b0f14;
+  --panel:#0f1420;
+  --panel-2:#0c111b;
+  --accent:#4f7cff;
+  --accent-weak:#2a54ff;
+  --ok:#2dd4bf;
+  --danger:#ef4444;
+  --shadow:0 10px 24px rgba(0,0,0,.45);
+}
 
-  // 基本ノード
-  const sidebar = $('#sidebar');
-  const toggle  = $('#toggle');
-  const tools = {
-    pen:    $('#tool-pen'),
-    marker: $('#tool-marker'),
-    eraser: $('#tool-eraser'),
-    text:   $('#tool-text'),
-    gear:   $('#tool-gear') // 歯車
-  };
+html, body { height:100%; background:var(--bg); color:var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; }
+* { box-sizing:border-box; }
 
-  // 共通設定パネル（中身はタブ切替）
-  const panel = $('#panel');
-  const panelClose = $('#panel .close');
-  const panelTabs = {
-    pen:    $('#panel-pen'),
-    marker: $('#panel-marker'),
-    eraser: $('#panel-eraser'),
-    text:   $('#panel-text')
-  };
+/* ===== 上部メインバー ===== */
+header.topbar{
+  position:sticky; top:0; left:0; right:0; z-index:50;
+  height:44px; display:flex; align-items:center; gap:8px;
+  padding:0 12px;
+  background:linear-gradient(0deg, var(--accent-weak), var(--accent));
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+header.topbar .title{ font-weight:600; }
+header.topbar .spacer{ flex:1; }
+header.topbar .btn{
+  height:28px; padding:0 10px; border-radius:10px;
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:12px; color:white; background:rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.22);
+}
+header.topbar .btn:hover{ background:rgba(255,255,255,.22); transform:translateY(-1px); }
+header.topbar .btn:active{ transform:translateY(0); }
 
-  // ========== 折り畳み ==========
-  function setCollapsed(state){
-    if(state){
-      sidebar.setAttribute('data-collapsed','1');  // 上へ隠す
-      // トグルは常に見える（sidebarの一番上にあるため）
-      toggle.setAttribute('data-dir','down');      // ▽
-      toggle.innerHTML = arrowSVG('down');
-    }else{
-      sidebar.removeAttribute('data-collapsed');
-      toggle.setAttribute('data-dir','up');        // △
-      toggle.innerHTML = arrowSVG('up');
-    }
-  }
-  function arrowSVG(dir){
-    // 中抜き三角（塗りなし、線のみ）
-    const d = {
-      up:   'M3 12 L11 4 L19 12',
-      down: 'M3 8  L11 16 L19 8'
-    }[dir];
-    return `<svg viewBox="0 0 22 22"><path d="${d}" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  }
-  toggle.addEventListener('click', ()=>{
-    const c = sidebar.getAttribute('data-collapsed') === '1';
-    setCollapsed(!c);
-  });
-  // 初期は開いた状態・上向き△
-  setCollapsed(false);
+/* ===== Canvas wrapper ===== */
+#wrap{ position:relative; width:100%; height:calc(100% - 44px); }
+#stage{ position:absolute; inset:0; }
 
-  // ========== ツール選択 & パネル切替 ==========
-  let active = 'pen';
-  function setActive(next){
-    // ボタンの見た目
-    Object.entries(tools).forEach(([key,el])=>{
-      if(!el) return;
-      el.classList.toggle('active', key===next);
-    });
-    active = next;
+/* ===== 左ツールバー ===== */
+#sidebar{
+  position:absolute; left:8px; top:64px; z-index:40;
+  width:48px; padding:6px; border-radius:12px;
+  background:rgba(0,0,0,.82);
+  box-shadow: var(--shadow);
+  display:flex; flex-direction:column; gap:6px;
+  transition:transform .28s ease, opacity .2s ease;
+}
+/* 折り畳み：上方向。トグルの高さ分だけ見せる */
+#sidebar[data-collapsed="1"]{
+  transform: translateY(calc(-100% + 44px));
+}
 
-    // 設定パネル（ギア以外で開く／ギアはトグル）
-    if(next === 'gear'){
-      panel.classList.toggle('show');
-    }else{
-      showPanel(next);
-    }
-  }
-  function showPanel(kind){
-    panel.classList.add('show');
-    Object.entries(panelTabs).forEach(([k,el])=>{
-      if(!el) return;
-      el.style.display = (k===kind)? 'block':'none';
-    });
-  }
-  Object.entries(tools).forEach(([key,el])=>{
-    if(!el) return;
-    el.addEventListener('click', ()=> setActive(key));
-  });
-  panelClose?.addEventListener('click', ()=> panel.classList.remove('show'));
+/* トグル（△/▽）中抜きで大きめ */
+#toggle{
+  width:36px; height:36px; border-radius:10px;
+  background:var(--panel-2); border:1px solid rgba(255,255,255,.15);
+  display:grid; place-items:center; cursor:pointer;
+}
+#toggle svg{ width:18px; height:18px; stroke:var(--ink); fill:none; stroke-width:2.5; }
 
-  // ========== 上部バー（印刷/PNG/共有） ==========
-  $('#btn-print')?.addEventListener('click', ()=> window.print());
-  $('#btn-png')?.addEventListener('click', ()=>{
-    // ここは既存のキャンバス出力関数に合わせて差し替え
-    // 例: exportPNG()
-    if(typeof exportPNG === 'function'){ exportPNG(); }
-    else alert('PNG出力の関数が見つかりません。');
-  });
-  $('#btn-share')?.addEventListener('click', async ()=>{
-    try{
-      await navigator.share?.({ title:'Note Link', url: location.href }) ??
-        navigator.clipboard.writeText(location.href);
-      alert('URLを共有/コピーしました。');
-    }catch(e){ console.warn(e); }
-  });
+/* ツールボタン */
+.tool{
+  width:36px; height:36px; border-radius:10px; cursor:pointer;
+  background:var(--panel); border:1px solid rgba(255,255,255,.12);
+  display:grid; place-items:center; color:var(--ink);
+}
+.tool svg{ width:18px; height:18px; }
+.tool:hover{ outline:2px solid rgba(79,124,255,.35); }
+.tool.active{ outline:2px solid var(--ok); box-shadow:0 0 0 2px rgba(0,0,0,.6) inset; }
 
-  // ========== 初期ツール ==========
-  setActive('pen');
-})();
-</script>
+/* 設定（ギア）は最下部に固定 */
+#gear-wrap{ margin-top:auto; }
+
+/* ===== 設定パネル（共通箱＋中身切替） ===== */
+.panel{
+  position:absolute; left:62px; top:56px; z-index:45;
+  min-width:300px; background:rgba(12,17,27,.95);
+  border:1px solid rgba(255,255,255,.14); border-radius:12px;
+  padding:14px; box-shadow:var(--shadow);
+  display:none;
+}
+.panel.show{ display:block; }
+.panel h4{ margin:0 0 10px; font-size:14px; color:var(--ink); }
+.row{ display:flex; align-items:center; gap:10px; margin:10px 0; }
+.row label{ width:76px; font-size:12px; color:var(--ink-dim); }
+.row input[type="range"]{ flex:1; }
+.row input[type="color"]{ width:32px; height:22px; padding:0; border:0; background:transparent; }
+
+.panel .close{
+  position:absolute; right:10px; top:10px; height:26px; padding:0 10px;
+  border-radius:8px; border:1px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.08); color:var(--ink); font-size:12px;
+}
+
+/* ===== ツールチップ ===== */
+[data-tip]{ position:relative; }
+[data-tip]:hover:after{
+  content:attr(data-tip);
+  position:absolute; left:48px; top:50%; transform:translateY(-50%);
+  background:#222a; color:#fff; font-size:12px; padding:4px 8px; border-radius:8px;
+  white-space:nowrap; pointer-events:none;
+}
+
+/* キャンバス側は左余白を作らない（ツールバーはオーバーレイ） */
+#wrap, #stage{ padding-left:0; }
